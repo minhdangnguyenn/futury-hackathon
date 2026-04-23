@@ -20,6 +20,7 @@
     "seed:signals": "tsx src/scripts/seed-signals.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.84.1",
     "@payloadcms/next": "3.84.1",
     "@payloadcms/richtext-lexical": "3.84.1",
     "@payloadcms/ui": "3.84.1",
@@ -30,8 +31,8 @@
     "payload": "3.84.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sharp": "0.34.2",
-    "@payloadcms/db-postgres": "3.84.1"
+    "recharts": "^3.8.1",
+    "sharp": "0.34.2"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",
