@@ -1,4 +1,4 @@
-import type { Insight, Trend, PersonaKey, UseCaseKey } from '../types/dashboard'
+import type { Insight, Signal, Trend, PersonaKey, UseCaseKey } from '../types/dashboard'
 
 /**
  * Filter insights by persona.
@@ -16,6 +16,21 @@ export function filterByPersona(insights: Insight[], persona: PersonaKey | null)
 export function filterByUseCase(insights: Insight[], useCase: UseCaseKey | null): Insight[] {
   if (useCase === null) return insights
   return insights.filter((insight) => insight.useCase === useCase)
+}
+
+export function filterSignalsByPersona(signals: Signal[], persona: PersonaKey | null): Signal[] {
+  if (persona === null) return signals
+  return signals.filter((signal) => signal.personas.includes(persona))
+}
+
+export function filterSignalsByUseCase(signals: Signal[], useCase: UseCaseKey | null): Signal[] {
+  if (useCase === null) return signals
+  return signals.filter((signal) => signal.useCase === useCase)
+}
+
+export function filterTrendsByUseCase(trends: Trend[], useCase: UseCaseKey | null): Trend[] {
+  if (useCase === null) return trends
+  return trends.filter((trend) => trend.useCase === useCase)
 }
 
 /**

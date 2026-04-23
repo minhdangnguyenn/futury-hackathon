@@ -8,9 +8,9 @@ interface UseCaseSelectorProps {
 }
 
 const USE_CASES: { key: UseCaseKey; label: string }[] = [
-  { key: 'competitor_move', label: 'Competitor Move' },
-  { key: 'market_problem', label: 'Market Problem Signal' },
-  { key: 'technology_scouting', label: 'Technology Scouting' },
+  { key: 'competitor_move', label: 'React To Competitor Move' },
+  { key: 'market_problem', label: 'Analyze Market Problem' },
+  { key: 'technology_scouting', label: 'Scout New Technology' },
 ]
 
 export function UseCaseSelector({ activeUseCase, onSelect }: UseCaseSelectorProps) {

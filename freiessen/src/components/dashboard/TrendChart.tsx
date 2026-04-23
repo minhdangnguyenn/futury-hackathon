@@ -13,10 +13,9 @@ import {
 
 interface TrendChartProps {
   data: TrendDataPoint[]
-  topic: string
 }
 
-export function TrendChart({ data, topic }: TrendChartProps) {
+export function TrendChart({ data }: TrendChartProps) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full w-full">
@@ -31,10 +30,7 @@ export function TrendChart({ data, topic }: TrendChartProps) {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" tick={{ fontSize: 12 }} />
         <YAxis tick={{ fontSize: 12 }} />
-        <Tooltip
-          formatter={(value: number) => [value, 'Count']}
-          labelFormatter={(label: string) => `Date: ${label}`}
-        />
+        <Tooltip />
         <Line
           type="monotone"
           dataKey="count"
