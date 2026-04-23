@@ -1,10 +1,12 @@
+import type { CollectionConfig } from 'payload'
+
 export const Competitors: CollectionConfig = {
   slug: 'competitors',
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'url', 'industry', 'status', 'createdAt'],
   },
-  // REMOVE versions block
+
   fields: [
     {
       name: 'name',
