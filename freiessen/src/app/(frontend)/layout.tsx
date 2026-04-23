@@ -1,22 +1,22 @@
 import React from 'react'
 import './styles.css'
+import Header from './components/Header'
 
 export const metadata = {
   description: 'Viega Dashboard.',
   title: 'Viega Dashboard',
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: '/favicon.ico',
+    apple: '/favicon.ico',
+    shortcut: '/favicon.ico',
   },
 }
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
-
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <Header />
         <main>{children}</main>
       </body>
     </html>
