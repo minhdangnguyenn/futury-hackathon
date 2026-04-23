@@ -43,6 +43,7 @@ async function main() {
   }
 
   console.log('✅ Seeded competitors:', competitorsSeed.length)
+  process.exit(0)
 }
 
 main().catch((err) => {
