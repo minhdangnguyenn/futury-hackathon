@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -85,30 +85,22 @@ export function DashboardClient({
   const [activeUseCase, setActiveUseCase] = useState<UseCaseKey | null>(null)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
 
-  const filteredInsights = useMemo(
-    () => filterByUseCase(filterByPersona(initialInsights, activePersona), activeUseCase),
-    [activePersona, activeUseCase, initialInsights],
+  const filteredInsights = filterByUseCase(filterByPersona(initialInsights, activePersona), activeUseCase)
+  const filteredSignals = filterSignalsByUseCase(
+    filterSignalsByPersona(initialSignals, activePersona),
+    activeUseCase,
   )
-  const filteredSignals = useMemo(
-    () => filterSignalsByUseCase(filterSignalsByPersona(initialSignals, activePersona), activeUseCase),
-    [activePersona, activeUseCase, initialSignals],
-  )
-  const filteredTrends = useMemo(
-    () => filterTrendsByUseCase(initialTrends, activeUseCase),
-    [activeUseCase, initialTrends],
-  )
+  const filteredTrends = filterTrendsByUseCase(initialTrends, activeUseCase)
 
-  const topTrends = useMemo(() => getTopTrends(filteredTrends, 5), [filteredTrends])
+  const topTrends = getTopTrends(filteredTrends, 5)
   const topTopic = topTrends[0]?.topic
-  const chartData: TrendDataPoint[] = useMemo(() => {
-    if (!topTopic) return []
-
-    return filteredTrends
-      .filter((trend) => trend.topic === topTopic)
-      .slice()
-      .sort((left, right) => left.date.localeCompare(right.date))
-      .map((trend) => ({ date: trend.date.slice(0, 10), count: trend.count }))
-  }, [filteredTrends, topTopic])
+  const chartData: TrendDataPoint[] = topTopic
+    ? filteredTrends
+        .filter((trend) => trend.topic === topTopic)
+        .slice()
+        .sort((left, right) => left.date.localeCompare(right.date))
+        .map((trend) => ({ date: trend.date.slice(0, 10), count: trend.count }))
+    : []
 
   const visibleSignals = filteredSignals.slice(0, 6)
   const activeUseCaseMeta = activeUseCase ? useCaseCopy[activeUseCase] : null
