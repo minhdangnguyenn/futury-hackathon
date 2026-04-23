@@ -1,3 +1,11 @@
 # to seed competitors data
 
-npx tsx src/scripts/seed-competitors.ts
+```bash
+bun seed:competitors
+```
+
+# to seed signals (news)
+
+```bash
+bun seed:signals
+```

@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     pages: Page;
     competitors: Competitor;
+    signals: Signal;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +83,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     competitors: CompetitorsSelect<false> | CompetitorsSelect<true>;
+    signals: SignalsSelect<false> | SignalsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -219,6 +221,39 @@ export interface Competitor {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "signals".
+ */
+export interface Signal {
+  id: number;
+  signal_type: 'trend' | 'weak_signal' | 'disruption' | 'emerging_tech' | 'regulatory' | 'market_shift';
+  source: string;
+  title: string;
+  summary: string;
+  entities?:
+    | {
+        name: string;
+        type?: ('company' | 'person' | 'technology' | 'location' | 'topic') | null;
+        id?: string | null;
+      }[]
+    | null;
+  evidence_urls?:
+    | {
+        url: string;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  trend_metrics?: {
+    momentum?: number | null;
+    novelty?: number | null;
+    impact?: number | null;
+    confidence?: number | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -256,6 +291,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'competitors';
         value: number | Competitor;
+      } | null)
+    | ({
+        relationTo: 'signals';
+        value: number | Signal;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -368,6 +407,40 @@ export interface CompetitorsSelect<T extends boolean = true> {
   industry?: T;
   status?: T;
   notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "signals_select".
+ */
+export interface SignalsSelect<T extends boolean = true> {
+  signal_type?: T;
+  source?: T;
+  title?: T;
+  summary?: T;
+  entities?:
+    | T
+    | {
+        name?: T;
+        type?: T;
+        id?: T;
+      };
+  evidence_urls?:
+    | T
+    | {
+        url?: T;
+        label?: T;
+        id?: T;
+      };
+  trend_metrics?:
+    | T
+    | {
+        momentum?: T;
+        novelty?: T;
+        impact?: T;
+        confidence?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
