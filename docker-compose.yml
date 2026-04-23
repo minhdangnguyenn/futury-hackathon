@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    platform: linux/amd64
+    container_name: db
+    environment:
+      POSTGRES_DB: viega
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      TZ: 'GMT+2'
+      PGTZ: 'GMT+2'
+    ports:
+      - '5432:5432'
+    volumes:
+      - data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  data:
