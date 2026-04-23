@@ -6,9 +6,9 @@ export const metadata = {
   description: 'Viega Dashboard.',
   title: 'Viega Dashboard',
   icons: {
-    icon: '/favicon.ico',
-    apple: '/favicon.ico',
-    shortcut: '/favicon.ico',
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+    shortcut: '/favicon.svg',
   },
 }
 

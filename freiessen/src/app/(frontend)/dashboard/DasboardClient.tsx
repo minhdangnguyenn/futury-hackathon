@@ -15,65 +15,37 @@ import {
   Legend,
 } from 'recharts'
 
-const PERSONAS = [
-  { id: 'josef', label: 'Josef', focus: 'compliance' },
-  { id: 'steffen', label: 'Steffen', focus: 'feasibility' },
-  { id: 'david', label: 'David', focus: 'innovation' },
-  { id: 'volkmar', label: 'Volkmar', focus: 'market' },
-  { id: 'nick', label: 'Nick', focus: 'sustainability' },
-]
-
 const USE_CASES = [
   { id: 'uc1', label: 'UC1 — Competitor Moves', types: ['market_shift', 'disruption'] },
   { id: 'uc2', label: 'UC2 — Market Problems', types: ['trend', 'regulatory', 'weak_signal'] },
   { id: 'uc3', label: 'UC3 — Tech Scouting', types: ['emerging_tech'] },
 ]
 
-function getRecommendation(signal: any, persona: string) {
+function getRecommendation(signal: any) {
   const { momentum, impact, novelty, confidence } = signal.trend_metrics ?? {}
   const score = (momentum + impact + novelty + confidence) / 4
 
-  // a lookup table that maps each persona to their own version of the recommendation reason text.
-  const recMap: Record<string, { build: string; invest: string; ignore: string }> = {
-    josef: {
-      build: 'Meets compliance standards — proceed',
-      invest: 'Assess regulatory risk first',
-      ignore: 'Low reliability signal',
-    },
-    steffen: {
-      build: 'High feasibility — ship it',
-      invest: 'Needs scoping before commit',
-      ignore: 'Not actionable yet',
-    },
-    david: {
-      build: 'Strong differentiation opportunity',
-      invest: 'Explore further for novelty',
-      ignore: 'Too incremental',
-    },
-    volkmar: {
-      build: 'Market confirmed — move fast',
-      invest: 'Monitor competitors closely',
-      ignore: 'Weak market signal',
-    },
-    nick: {
-      build: 'Strong sustainability fit',
-      invest: 'Evaluate lifecycle impact',
-      ignore: 'Low green relevance',
-    },
-  }
-
-  const labels = recMap[persona] ?? recMap.david
-
   if (score >= 75)
-    return { label: '🟢 Build', reason: labels.build, color: 'bg-green-100 border-green-400' }
+    return {
+      label: '🟢 Build',
+      reason: 'High signal strength — recommend proceeding',
+      color: 'bg-green-100 border-green-400',
+    }
   if (score >= 55)
-    return { label: '🟡 Invest', reason: labels.invest, color: 'bg-yellow-100 border-yellow-400' }
-  return { label: '🔴 Ignore', reason: labels.ignore, color: 'bg-red-100 border-red-400' }
+    return {
+      label: '🟡 Invest',
+      reason: 'Moderate signal — worth monitoring and investing',
+      color: 'bg-yellow-100 border-yellow-400',
+    }
+  return {
+    label: '🔴 Ignore',
+    reason: 'Low signal strength — not actionable yet',
+    color: 'bg-red-100 border-red-400',
+  }
 }
 
 export default function DashboardClient({ signals }: { signals: any[] }) {
   const [activeUC, setActiveUC] = useState('uc1')
-  const [activePersona, setActivePersona] = useState('josef')
 
   const uc = USE_CASES.find((u) => u.id === activeUC)!
   const filtered = signals.filter((s) => uc.types.includes(s.signal_type))
@@ -108,27 +80,6 @@ export default function DashboardClient({ signals }: { signals: any[] }) {
         <p className="text-gray-500 text-sm mt-1">
           Last updated: {new Date().toLocaleDateString()}
         </p>
-      </div>
-
-      {/* Persona selector */}
-      <div className="mb-6">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Persona</p>
-        <div className="flex gap-2 flex-wrap">
-          {PERSONAS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setActivePersona(p.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border transition-all
-                ${
-                  activePersona === p.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Use case tabs */}
@@ -191,7 +142,7 @@ export default function DashboardClient({ signals }: { signals: any[] }) {
       {/* Signal cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map((signal) => {
-          const rec = getRecommendation(signal, activePersona)
+          const rec = getRecommendation(signal)
           return (
             <div
               key={signal.id}
