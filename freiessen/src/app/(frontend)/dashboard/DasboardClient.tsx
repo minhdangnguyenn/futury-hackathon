@@ -85,6 +85,22 @@ export default function DashboardClient({ signals }: { signals: any[] }) {
   const [activeUC, setActiveUC] = useState('uc1')
   const [activeFilter, setActiveFilter] = useState('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [detecting, setDetecting] = useState(false)
+  const [lastDetected, setLastDetected] = useState<string | null>(null)
+  const [detectedCount, setDetectedCount] = useState<number | null>(null)
+
+  async function runDetection() {
+    setDetecting(true)
+    try {
+      const res = await fetch('/api/detect-signals', { method: 'POST' })
+      const data = await res.json()
+      setDetectedCount(data.detected)
+      setLastDetected(new Date().toLocaleTimeString())
+      window.location.reload()
+    } finally {
+      setDetecting(false)
+    }
+  }
 
   const uc = USE_CASES.find((u) => u.id === activeUC)!
   const byUC = signals.filter((s) => uc.types.includes(s.signal_type))
@@ -94,12 +110,10 @@ export default function DashboardClient({ signals }: { signals: any[] }) {
     return getRecommendation(s).id === activeFilter
   })
 
-  // Summary stats
   const buildCount = byUC.filter((s) => getRecommendation(s).id === 'build').length
   const investCount = byUC.filter((s) => getRecommendation(s).id === 'invest').length
   const ignoreCount = byUC.filter((s) => getRecommendation(s).id === 'ignore').length
 
-  // Chart — one bar per signal showing overall score
   const chartData = byUC.map((s) => ({
     name: s.title.slice(0, 22) + '…',
     Score: getScore(s),
@@ -117,6 +131,29 @@ export default function DashboardClient({ signals }: { signals: any[] }) {
       </div>
 
       <div className="p-6 max-w-6xl mx-auto">
+        {/* Auto-detection panel */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-800 text-sm">🤖 Automated Signal Detection</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Sources: HackerNews · Reddit r/HVAC · Reddit r/plumbing
+            </p>
+            {lastDetected && (
+              <p className="text-xs text-green-600 mt-1">
+                ✅ {detectedCount} new signals detected at {lastDetected}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={runDetection}
+            disabled={detecting}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50"
+            style={{ backgroundColor: detecting ? '#999' : '#E2001A' }}
+          >
+            {detecting ? '⏳ Detecting...' : '🔍 Detect Now'}
+          </button>
+        </div>
+
         {/* UC Tabs */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {USE_CASES.map((u) => (
@@ -244,6 +281,16 @@ export default function DashboardClient({ signals }: { signals: any[] }) {
                         className={`text-xs font-bold px-2 py-0.5 rounded-full border ${rec.badge}`}
                       >
                         {rec.label}
+                      </span>
+                      {/* Source badge */}
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
+                        {signal.source === 'hackernews' && '🟠 HackerNews'}
+                        {signal.source === 'reddit' && '🔴 Reddit'}
+                        {signal.source === 'simulated_news' && '📰 News'}
+                        {signal.source === 'simulated_patent' && '📋 Patent'}
+                        {signal.source === 'simulated_forum' && '💬 Forum'}
+                        {signal.source === 'simulated_release' && '🚀 Release'}
+                        {signal.source === 'google_trends' && '📈 Google Trends'}
                       </span>
                     </div>
                     <h3 className="font-semibold text-gray-800 text-sm leading-snug truncate">
