@@ -1,4 +1,4 @@
-# Viega CMS Hooks Reference
+# Payload CMS Hooks Reference
 
 Complete reference for collection hooks, field hooks, and hook context patterns.
 

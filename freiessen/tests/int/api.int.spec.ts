@@ -1,9 +1,9 @@
-import { getPayload, Viega } from 'payload'
+import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 
 import { describe, it, beforeAll, expect } from 'vitest'
 
-let payload: Viega
+let payload: Payload
 
 describe('API', () => {
   beforeAll(async () => {

@@ -1,6 +1,6 @@
-# Viega Custom API Endpoints Reference
+# Payload Custom API Endpoints Reference
 
-Custom REST API endpoints extend Viega's auto-generated CRUD operations with custom logic, authentication flows, webhooks, and integrations.
+Custom REST API endpoints extend Payload's auto-generated CRUD operations with custom logic, authentication flows, webhooks, and integrations.
 
 ## Quick Reference
 
@@ -18,7 +18,7 @@ Custom REST API endpoints extend Viega's auto-generated CRUD operations with cus
 | Property          | Type                    | Description                                            |
 | ----------------- | ----------------------- | ------------------------------------------------------ |
 | `req.user`        | `User \| null`          | Authenticated user (null if not authenticated)         |
-| `req.payload`     | `Viega`               | Viega instance for operations (find, create...)      |
+| `req.payload`     | `Payload`               | Payload instance for operations (find, create...)      |
 | `req.routeParams` | `Record<string, any>`   | Path parameters (e.g., `:id`)                          |
 | `req.url`         | `string`                | Full request URL                                       |
 | `req.method`      | `string`                | HTTP method                                            |
@@ -54,7 +54,7 @@ export const authenticatedEndpoint = {
 }
 ```
 
-### Using Viega Operations
+### Using Payload Operations
 
 Use `req.payload` for database operations with access control and hooks.
 
@@ -282,7 +282,7 @@ export const endpoint = {
 
 ### headersWithCors
 
-Applies CORS headers from Viega config.
+Applies CORS headers from Payload config.
 
 ```ts
 import { headersWithCors } from 'payload'

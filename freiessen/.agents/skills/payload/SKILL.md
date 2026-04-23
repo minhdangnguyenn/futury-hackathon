@@ -1,11 +1,11 @@
 ---
 name: payload
-description: Use when working with Viega CMS projects (payload.config.ts, collections, fields, hooks, access control, Viega API). Use when debugging validation errors, security issues, relationship queries, transactions, or hook behavior.
+description: Use when working with Payload CMS projects (payload.config.ts, collections, fields, hooks, access control, Payload API). Use when debugging validation errors, security issues, relationship queries, transactions, or hook behavior.
 ---
 
-# Viega CMS Application Development
+# Payload CMS Application Development
 
-Viega is a Next.js native CMS with TypeScript-first architecture, providing admin panel, database management, REST/GraphQL APIs, authentication, and file storage.
+Payload is a Next.js native CMS with TypeScript-first architecture, providing admin panel, database management, REST/GraphQL APIs, authentication, and file storage.
 
 ## Quick Reference
 
@@ -203,7 +203,7 @@ const post = await payload.findByID({
 
 For all query operators and REST/GraphQL examples, see [QUERIES.md](reference/QUERIES.md).
 
-### Getting Viega Instance
+### Getting Payload Instance
 
 ```ts
 // In API routes (Next.js)
@@ -444,5 +444,5 @@ import type { Post, User } from '@/payload-types'
 - llms-full.txt: <https://payloadcms.com/llms-full.txt>
 - Docs: <https://payloadcms.com/docs>
 - GitHub: <https://github.com/payloadcms/payload>
-- Examples: <https://github.com/payloadcms/payload/tree/main/examples>
-- Templates: <https://github.com/payloadcms/payload/tree/main/templates>
+- Examples: <https://github.com/payloadcms/payload/tree/3.x/examples>
+- Templates: <https://github.com/payloadcms/payload/tree/3.x/templates>

@@ -1,4 +1,4 @@
-# Viega CMS Advanced Features
+# Payload CMS Advanced Features
 
 Complete reference for authentication, jobs, custom endpoints, components, plugins, and localization.
 
@@ -339,7 +339,7 @@ export const myPlugin =
 
 ```ts
 import { buildConfig } from 'payload'
-import type { Field, Viega } from 'payload'
+import type { Field, Payload } from 'payload'
 
 export default buildConfig({
   localization: {
@@ -367,20 +367,20 @@ const posts = await payload.find({
 
 ## TypeScript Type References
 
-For complete TypeScript type definitions and signatures, reference these files from the Viega source:
+For complete TypeScript type definitions and signatures, reference these files from the Payload source:
 
 ### Core Configuration Types
 
-- **[All Commonly-Used Types](https://github.com/payloadcms/payload/blob/main/packages/payload/src/index.ts)** - Check here first for commonly used types and interfaces. All core types are exported from this file.
+- **[All Commonly-Used Types](https://github.com/payloadcms/payload/blob/3.x/packages/payload/src/index.ts)** - Check here first for commonly used types and interfaces. All core types are exported from this file.
 
 ### Database & Adapters
 
-- **[Database Adapter Types](https://github.com/payloadcms/payload/blob/main/packages/payload/src/database/types.ts)** - Base adapter interface
-- **[MongoDB Adapter](https://github.com/payloadcms/payload/blob/main/packages/db-mongodb/src/index.ts)** - MongoDB-specific options
-- **[Postgres Adapter](https://github.com/payloadcms/payload/blob/main/packages/db-postgres/src/index.ts)** - Postgres-specific options
+- **[Database Adapter Types](https://github.com/payloadcms/payload/blob/3.x/packages/payload/src/database/types.ts)** - Base adapter interface
+- **[MongoDB Adapter](https://github.com/payloadcms/payload/blob/3.x/packages/db-mongodb/src/index.ts)** - MongoDB-specific options
+- **[Postgres Adapter](https://github.com/payloadcms/payload/blob/3.x/packages/db-postgres/src/index.ts)** - Postgres-specific options
 
 ### Rich Text & Plugins
 
-- **[Lexical Types](https://github.com/payloadcms/payload/blob/main/packages/richtext-lexical/src/exports/server/index.ts)** - Lexical editor configuration
+- **[Lexical Types](https://github.com/payloadcms/payload/blob/3.x/packages/richtext-lexical/src/exports/server/index.ts)** - Lexical editor configuration
 
 When users need detailed type information, fetch these URLs to provide complete signatures and optional parameters.

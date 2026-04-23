@@ -1,4 +1,4 @@
-# Viega CMS Collections Reference
+# Payload CMS Collections Reference
 
 Complete reference for collection configurations and patterns.
 
@@ -173,7 +173,7 @@ export const Pages: CollectionConfig = {
 
 ## Versioning & Drafts
 
-Viega maintains version history and supports draft/publish workflows.
+Payload maintains version history and supports draft/publish workflows.
 
 ```ts
 import type { CollectionConfig } from 'payload'

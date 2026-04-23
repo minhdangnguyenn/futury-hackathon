@@ -1,4 +1,4 @@
-# Viega CMS Adapters Reference
+# Payload CMS Adapters Reference
 
 Complete reference for database, storage, and email adapters.
 
@@ -49,7 +49,7 @@ export default buildConfig({
 
 ## Transactions
 
-Viega automatically uses transactions for all-or-nothing database operations. Pass `req` to include operations in the same transaction.
+Payload automatically uses transactions for all-or-nothing database operations. Pass `req` to include operations in the same transaction.
 
 ```ts
 import type { CollectionAfterChangeHook } from 'payload'
