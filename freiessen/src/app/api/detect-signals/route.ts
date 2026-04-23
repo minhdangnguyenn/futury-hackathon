@@ -62,11 +62,16 @@ const CATEGORIES = [
   },
 ]
 
-// ── Fetch from HackerNews ──────────────────────────────────────────
-async function fetchHackerNews(category: (typeof CATEGORIES)[0]) {
+// ── Helpers ────────────────────────────────────────────────────────
+function toHNQuery(keyword: string) {
+  // "lead free solder" -> "lead+free+solder"
+  return keyword.trim().split(/\s+/g).filter(Boolean).join('+')
+}
+
+async function fetchHackerNewsByQuery(hnQuery: string, label: string) {
   try {
     const res = await fetch(
-      `https://hn.algolia.com/api/v1/search?query=${category.hnQuery}&tags=story&hitsPerPage=3`,
+      `https://hn.algolia.com/api/v1/search?query=${hnQuery}&tags=story&hitsPerPage=5`,
     )
     const data = await res.json()
 
@@ -74,7 +79,7 @@ async function fetchHackerNews(category: (typeof CATEGORIES)[0]) {
       signal_type: 'emerging_tech' as const,
       source: 'hackernews',
       title: hit.title,
-      summary: `[${category.label}] Discussed on HackerNews with ${hit.points} upvotes and ${hit.num_comments} comments.`,
+      summary: `[${label}] Discussed on HackerNews with ${hit.points} upvotes and ${hit.num_comments} comments.`,
       entities: [{ name: 'HackerNews Community', type: 'company' as const }],
       evidence_urls: [
         {
@@ -89,11 +94,10 @@ async function fetchHackerNews(category: (typeof CATEGORIES)[0]) {
   }
 }
 
-// ── Fetch from Reddit ──────────────────────────────────────────────
-async function fetchReddit(category: (typeof CATEGORIES)[0]) {
+async function fetchRedditByQuery(redditQuery: string, subreddit: string, label: string) {
   try {
     const res = await fetch(
-      `https://www.reddit.com/r/${category.subreddit}/search.json?q=${encodeURIComponent(category.redditQuery)}&sort=new&limit=3`,
+      `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(redditQuery)}&sort=new&limit=5`,
       { headers: { 'User-Agent': 'viega-dashboard/1.0' } },
     )
     const data = await res.json()
@@ -103,7 +107,7 @@ async function fetchReddit(category: (typeof CATEGORIES)[0]) {
       signal_type: 'trend' as const,
       source: 'reddit',
       title: post.data.title,
-      summary: `[${category.label}] Posted on r/${post.data.subreddit} with ${post.data.score} upvotes and ${post.data.num_comments} comments.`,
+      summary: `[${label}] Posted on r/${post.data.subreddit} with ${post.data.score} upvotes and ${post.data.num_comments} comments.`,
       entities: [{ name: post.data.subreddit, type: 'topic' as const }],
       evidence_urls: [
         {
@@ -119,36 +123,73 @@ async function fetchReddit(category: (typeof CATEGORIES)[0]) {
 }
 
 // ── Main route ─────────────────────────────────────────────────────
-export async function POST() {
+type DetectMode = 'all' | 'keyword'
+
+export async function POST(req: Request) {
   try {
     const payload = await getPayload({ config })
 
-    // Fetch all categories in parallel
-    const results = await Promise.all(
-      CATEGORIES.map((cat) =>
-        Promise.all([fetchHackerNews(cat), fetchReddit(cat)]).then(([hn, reddit]) => ({
-          category: cat.label,
-          signals: [...hn, ...reddit],
-        })),
-      ),
-    )
+    const body = await req.json().catch(() => ({}) as any)
+    const mode: DetectMode = body?.mode === 'keyword' ? 'keyword' : 'all'
+    const keyword = String(body?.keyword ?? '').trim()
 
+    // 1) Build list of “jobs” to run
+    const jobs: Array<Promise<{ category: string; signals: any[] }>> = []
+
+    if (mode === 'keyword') {
+      if (!keyword) {
+        return NextResponse.json(
+          { success: false, error: 'Missing keyword for mode="keyword"' },
+          { status: 400 },
+        )
+      }
+
+      const label = `Keyword: ${keyword}`
+      const hnQuery = toHNQuery(keyword)
+
+      // pick a sensible subreddit set for generic keyword searches
+      const subreddit = 'HVAC+plumbing+Plumbing+homeautomation+smarthome+construction+sysadmin'
+
+      jobs.push(
+        Promise.all([
+          fetchHackerNewsByQuery(hnQuery, label),
+          fetchRedditByQuery(keyword, subreddit, label),
+        ]).then(([hn, reddit]) => ({ category: label, signals: [...hn, ...reddit] })),
+      )
+    } else {
+      // mode === 'all' (your current behavior)
+      for (const cat of CATEGORIES) {
+        jobs.push(
+          Promise.all([
+            fetchHackerNewsByQuery(cat.hnQuery, cat.label),
+            fetchRedditByQuery(cat.redditQuery, cat.subreddit, cat.label),
+          ]).then(([hn, reddit]) => ({ category: cat.label, signals: [...hn, ...reddit] })),
+        )
+      }
+    }
+
+    // 2) Execute jobs in parallel
+    const results = await Promise.all(jobs)
+
+    // 3) Save into Payload
     const allSignals = results.flatMap((r) => r.signals)
-    const created = []
+    const createdTitles: string[] = []
 
     for (const signal of allSignals) {
       const result = await payload.create({
         collection: 'signals',
         data: signal,
       })
-      created.push(result.title)
+      createdTitles.push(result.title)
     }
 
     return NextResponse.json({
       success: true,
-      detected: created.length,
+      mode,
+      keyword: mode === 'keyword' ? keyword : null,
+      detected: createdTitles.length,
       categories: results.map((r) => ({ category: r.category, count: r.signals.length })),
-      signals: created,
+      signals: createdTitles,
       fetchedAt: new Date().toISOString(),
     })
   } catch (err) {
