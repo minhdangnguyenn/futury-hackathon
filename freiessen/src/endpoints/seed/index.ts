@@ -1,4 +1,4 @@
-import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import type { CollectionSlug, GlobalSlug, Viega, PayloadRequest, File } from 'payload'
 
 import { contactForm as contactFormData } from './contact-form'
 import { contact as contactPageData } from './contact-page'
@@ -32,7 +32,7 @@ export const seed = async ({
   payload,
   req,
 }: {
-  payload: Payload
+  payload: Viega
   req: PayloadRequest
 }): Promise<void> => {
   payload.logger.info('Seeding database...')
@@ -231,6 +231,13 @@ export const seed = async ({
           },
           {
             link: {
+              type: 'custom',
+              label: 'Dashboard',
+              url: '/dashboard',
+            },
+          },
+          {
+            link: {
               type: 'reference',
               label: 'Contact',
               reference: {
@@ -264,7 +271,7 @@ export const seed = async ({
           {
             link: {
               type: 'custom',
-              label: 'Payload',
+              label: 'Viega',
               newTab: true,
               url: 'https://payloadcms.com/',
             },

@@ -1,4 +1,4 @@
-# Payload CMS Access Control Reference
+# Viega CMS Access Control Reference
 
 Complete reference for access control patterns across collections, fields, and globals.
 
@@ -12,7 +12,7 @@ Complete reference for access control patterns across collections, fields, and g
 
 ## Three Layers of Access Control
 
-Payload provides three distinct access control layers:
+Viega provides three distinct access control layers:
 
 1. **Collection-Level**: Controls operations on entire documents (create, read, update, delete, admin, unlock, readVersions)
 2. **Field-Level**: Controls access to individual fields (create, read, update)
@@ -93,7 +93,7 @@ export const Posts: CollectionConfig = {
 
 ### Role-Based Access Control (RBAC) Pattern
 
-Payload does NOT provide a roles system by default. The following is a commonly accepted pattern for implementing role-based access control in auth collections:
+Viega does NOT provide a roles system by default. The following is a commonly accepted pattern for implementing role-based access control in auth collections:
 
 ```ts
 import type { CollectionConfig } from 'payload'
@@ -124,7 +124,7 @@ export const Users: CollectionConfig = {
 
 **Important Notes:**
 
-1. **Not Built-In**: Payload does not provide a roles system out of the box. You must add a `roles` field to your auth collection.
+1. **Not Built-In**: Viega does not provide a roles system out of the box. You must add a `roles` field to your auth collection.
 2. **Save to JWT**: Use `saveToJWT: true` to include roles in the JWT token, enabling role checks without database queries.
 3. **Default Value**: Set a `defaultValue` to automatically assign new users a default role.
 4. **Access Control**: Restrict who can modify roles (typically only admins).
@@ -575,7 +575,7 @@ create: ({ req, data }) => boolean | Where
 
 // req: PayloadRequest
 //   - req.user: Authenticated user (if any)
-//   - req.payload: Payload instance for queries
+//   - req.payload: Viega instance for queries
 //   - req.headers: Request headers
 //   - req.locale: Current locale
 // data: The data being created

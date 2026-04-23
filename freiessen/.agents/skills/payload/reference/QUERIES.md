@@ -1,4 +1,4 @@
-# Payload CMS Querying Reference
+# Viega CMS Querying Reference
 
 Complete reference for querying data across Local API, REST, and GraphQL.
 

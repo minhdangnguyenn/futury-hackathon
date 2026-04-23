@@ -1,6 +1,6 @@
-# Payload CMS Field Types Reference
+# Viega CMS Field Types Reference
 
-Complete reference for all Payload field types with examples.
+Complete reference for all Viega field types with examples.
 
 ## Text Field
 

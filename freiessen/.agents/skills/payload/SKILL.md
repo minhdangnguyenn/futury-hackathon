@@ -1,11 +1,11 @@
 ---
 name: payload
-description: Use when working with Payload CMS projects (payload.config.ts, collections, fields, hooks, access control, Payload API). Use when debugging validation errors, security issues, relationship queries, transactions, or hook behavior.
+description: Use when working with Viega CMS projects (payload.config.ts, collections, fields, hooks, access control, Viega API). Use when debugging validation errors, security issues, relationship queries, transactions, or hook behavior.
 ---
 
-# Payload CMS Application Development
+# Viega CMS Application Development
 
-Payload is a Next.js native CMS with TypeScript-first architecture, providing admin panel, database management, REST/GraphQL APIs, authentication, and file storage.
+Viega is a Next.js native CMS with TypeScript-first architecture, providing admin panel, database management, REST/GraphQL APIs, authentication, and file storage.
 
 ## Quick Reference
 
@@ -203,7 +203,7 @@ const post = await payload.findByID({
 
 For all query operators and REST/GraphQL examples, see [QUERIES.md](reference/QUERIES.md).
 
-### Getting Payload Instance
+### Getting Viega Instance
 
 ```ts
 // In API routes (Next.js)

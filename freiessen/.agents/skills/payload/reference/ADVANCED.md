@@ -1,4 +1,4 @@
-# Payload CMS Advanced Features
+# Viega CMS Advanced Features
 
 Complete reference for authentication, jobs, custom endpoints, components, plugins, and localization.
 
@@ -339,7 +339,7 @@ export const myPlugin =
 
 ```ts
 import { buildConfig } from 'payload'
-import type { Field, Payload } from 'payload'
+import type { Field, Viega } from 'payload'
 
 export default buildConfig({
   localization: {
@@ -367,7 +367,7 @@ const posts = await payload.find({
 
 ## TypeScript Type References
 
-For complete TypeScript type definitions and signatures, reference these files from the Payload source:
+For complete TypeScript type definitions and signatures, reference these files from the Viega source:
 
 ### Core Configuration Types
 

@@ -7,7 +7,7 @@ node_modules
 next-env.d.ts
 .vercel
 
-# Payload default media upload directory
+# Viega default media upload directory
 public/media/
 
 public/robots.txt

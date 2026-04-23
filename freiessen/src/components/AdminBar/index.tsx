@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation'
 
 import './index.scss'
 
+import Link from 'next/link'
+
 import { getClientSideURL } from '@/utilities/getURL'
 
 const baseClass = 'admin-bar'
@@ -29,7 +31,11 @@ const collectionLabels = {
   },
 }
 
-const Title: React.FC = () => <span>Dashboard</span>
+const Title: React.FC = () => (
+  <Link href="/dashboard" className="text-white hover:underline">
+    Dashboard
+  </Link>
+)
 
 export const AdminBar: React.FC<{
   adminBarProps?: PayloadAdminBarProps

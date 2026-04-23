@@ -1,10 +1,10 @@
-# Payload Plugin Development
+# Viega Plugin Development
 
-Complete guide to creating Payload CMS plugins with TypeScript patterns, package structure, and best practices from the official Payload plugin template.
+Complete guide to creating Viega CMS plugins with TypeScript patterns, package structure, and best practices from the official Viega plugin template.
 
 ## Plugin Architecture
 
-Plugins are functions that receive configuration options and return a function that transforms the Payload config:
+Plugins are functions that receive configuration options and return a function that transforms the Viega config:
 
 ```ts
 import type { Config, Plugin } from 'payload'
@@ -25,7 +25,7 @@ export const myPlugin =
 **Key Pattern:** Double arrow function (currying)
 
 - First function: Accepts plugin options, returns plugin function
-- Second function: Accepts Payload config, returns modified config
+- Second function: Accepts Viega config, returns modified config
 
 ## Plugin Package Structure
 
@@ -83,7 +83,7 @@ plugin-<name>/
 
 **Key additions from official template:**
 
-- **dev/** directory with complete Payload project for local testing
+- **dev/** directory with complete Viega project for local testing
 - **src/exports/rsc.ts** for React Server Component exports
 - **src/components/** for organizing React components
 - **src/endpoints/** for custom API endpoint handlers
@@ -95,7 +95,7 @@ plugin-<name>/
 {
   "name": "payload-plugin-example",
   "version": "1.0.0",
-  "description": "A Payload CMS plugin",
+  "description": "A Viega CMS plugin",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -167,7 +167,7 @@ plugin-<name>/
 
 - `type: "module"` for ESM
 - Compiled output in `./dist`, source in `./src`
-- Payload as peer dependency (user installs it)
+- Viega as peer dependency (user installs it)
 - Multiple export entry points: main, `/types`, `/client`, `/rsc`
 - `/client` for client components, `/rsc` for React Server Components
 - SWC for fast compilation
@@ -748,7 +748,7 @@ hooks: {
 
 ### Type Safety
 
-Use Payload's exported types:
+Use Viega's exported types:
 
 ```ts
 import type { Config, Plugin, CollectionConfig, Field, CollectionSlug, GlobalSlug } from 'payload'
@@ -772,7 +772,7 @@ Always call existing `onInit` before your initialization. See [onInit Hook](#oni
 
 ## Advanced Patterns
 
-These patterns are extracted from official Payload plugins and represent production-ready techniques for complex plugin development.
+These patterns are extracted from official Viega plugins and represent production-ready techniques for complex plugin development.
 
 ### Advanced Configuration
 
@@ -939,7 +939,7 @@ incomingConfig.typescript.schema.push((args) => {
 
 #### Module Declaration Augmentation
 
-Extend Payload types for plugin-specific field properties:
+Extend Viega types for plugin-specific field properties:
 
 ```ts
 // In plugin types file
@@ -1284,7 +1284,7 @@ export const stripePlugin =
           slug: 'syncStripeProducts',
           handler: async ({ req }) => {
             const products = await stripe.products.list()
-            // Sync to Payload
+            // Sync to Viega
             return { output: { synced: products.data.length } }
           },
         },
@@ -1297,7 +1297,7 @@ export const stripePlugin =
 
 ### Local Development with dev/ Directory (optional)
 
-Include a `dev/` directory with a complete Payload project for local development:
+Include a `dev/` directory with a complete Viega project for local development:
 
 1. Create `dev/.env` from `.env.example`:
 
@@ -1341,13 +1341,13 @@ npm run dev  # Starts Next.js on http://localhost:3000
 Create `dev/int.spec.ts`:
 
 ```ts
-import type { Payload } from 'payload'
+import type { Viega } from 'payload'
 import config from '@payload-config'
 import { createPayloadRequest, getPayload } from 'payload'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { customEndpointHandler } from '../src/endpoints/handler.js'
 
-let payload: Payload
+let payload: Viega
 
 beforeAll(async () => {
   payload = await getPayload({ config })

@@ -123,6 +123,11 @@
   --success: oklch(78% 0.08 200deg);
   --warning: oklch(89% 0.1 75deg);
   --error: oklch(75% 0.15 25deg);
+
+  /* Viega brand colors */
+  /* NOTE: --viega-yellow must only be used on non-text decorative elements or large text (≥18px) to meet WCAG contrast requirements */
+  --viega-yellow: #FFD700;
+  --viega-white: #FFFFFF;
 }
 
 [data-theme='dark'] {
