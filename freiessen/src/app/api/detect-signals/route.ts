@@ -64,7 +64,6 @@ const CATEGORIES = [
 
 // ── Helpers ────────────────────────────────────────────────────────
 function toHNQuery(keyword: string) {
-  // "lead free solder" -> "lead+free+solder"
   return keyword.trim().split(/\s+/g).filter(Boolean).join('+')
 }
 
@@ -89,8 +88,9 @@ async function fetchHackerNewsByQuery(hnQuery: string, label: string) {
       ],
       trend_metrics: scoreFromHN(hit),
     }))
-  } catch {
-    return []
+  } catch (err) {
+    console.error('HN fetch failed:', err)
+    return [] // ✅ always return an array
   }
 }
 
@@ -117,8 +117,9 @@ async function fetchRedditByQuery(redditQuery: string, subreddit: string, label:
       ],
       trend_metrics: scoreFromReddit(post),
     }))
-  } catch {
-    return []
+  } catch (err) {
+    console.error('Reddit fetch failed:', err)
+    return [] // ✅ always return an array
   }
 }
 
@@ -126,73 +127,90 @@ async function fetchRedditByQuery(redditQuery: string, subreddit: string, label:
 type DetectMode = 'all' | 'keyword'
 
 export async function POST(req: Request) {
-  try {
-    const payload = await getPayload({ config })
+  const payload = await getPayload({ config })
 
-    const body = await req.json().catch(() => ({}) as any)
-    const mode: DetectMode = body?.mode === 'keyword' ? 'keyword' : 'all'
-    const keyword = String(body?.keyword ?? '').trim()
+  const body = await req.json().catch(() => ({}) as any)
+  const mode: DetectMode = body?.mode === 'keyword' ? 'keyword' : 'all'
+  const keyword = String(body?.keyword ?? '').trim()
 
-    // 1) Build list of “jobs” to run
-    const jobs: Array<Promise<{ category: string; signals: any[] }>> = []
+  // Validate
+  if (mode === 'keyword' && !keyword) {
+    return NextResponse.json({ success: false, error: 'Keyword input is empty.' }, { status: 400 })
+  }
 
-    if (mode === 'keyword') {
-      if (!keyword) {
-        return NextResponse.json(
-          { success: false, error: 'Missing keyword for mode="keyword"' },
-          { status: 400 },
-        )
-      }
+  // 1) Build list of jobs
+  const jobs: Array<Promise<{ category: string; signals: any[] }>> = []
 
-      const label = `Keyword: ${keyword}`
-      const hnQuery = toHNQuery(keyword)
+  if (mode === 'keyword') {
+    const label = `Keyword: ${keyword}`
+    const hnQuery = toHNQuery(keyword)
+    const subreddit = 'HVAC+plumbing+Plumbing+homeautomation+smarthome+construction+sysadmin'
 
-      // pick a sensible subreddit set for generic keyword searches
-      const subreddit = 'HVAC+plumbing+Plumbing+homeautomation+smarthome+construction+sysadmin'
-
+    jobs.push(
+      Promise.all([
+        fetchHackerNewsByQuery(hnQuery, label),
+        fetchRedditByQuery(keyword, subreddit, label),
+      ]).then(([hn, reddit]) => ({ category: label, signals: [...hn, ...reddit] })),
+    )
+  } else {
+    for (const cat of CATEGORIES) {
       jobs.push(
         Promise.all([
-          fetchHackerNewsByQuery(hnQuery, label),
-          fetchRedditByQuery(keyword, subreddit, label),
-        ]).then(([hn, reddit]) => ({ category: label, signals: [...hn, ...reddit] })),
+          fetchHackerNewsByQuery(cat.hnQuery, cat.label),
+          fetchRedditByQuery(cat.redditQuery, cat.subreddit, cat.label),
+        ]).then(([hn, reddit]) => ({ category: cat.label, signals: [...hn, ...reddit] })),
       )
-    } else {
-      // mode === 'all' (your current behavior)
-      for (const cat of CATEGORIES) {
-        jobs.push(
-          Promise.all([
-            fetchHackerNewsByQuery(cat.hnQuery, cat.label),
-            fetchRedditByQuery(cat.redditQuery, cat.subreddit, cat.label),
-          ]).then(([hn, reddit]) => ({ category: cat.label, signals: [...hn, ...reddit] })),
-        )
-      }
     }
+  }
 
-    // 2) Execute jobs in parallel
-    const results = await Promise.all(jobs)
+  // 2) Execute jobs
+  const results = await Promise.all(jobs)
+  const allSignals = results.flatMap((r) => r.signals)
 
-    // 3) Save into Payload
-    const allSignals = results.flatMap((r) => r.signals)
-    const createdTitles: string[] = []
+  // 3) Insert (robustly)
+  let inserted = 0
+  let failed = 0
+  const errors: Array<{ title?: string; reason: string }> = []
 
-    for (const signal of allSignals) {
-      const result = await payload.create({
+  for (const signal of allSignals) {
+    try {
+      await payload.create({
         collection: 'signals',
         data: signal,
       })
-      createdTitles.push(result.title)
-    }
+      inserted++
+    } catch (err: any) {
+      failed++
 
-    return NextResponse.json({
-      success: true,
-      mode,
-      keyword: mode === 'keyword' ? keyword : null,
-      detected: createdTitles.length,
-      categories: results.map((r) => ({ category: r.category, count: r.signals.length })),
-      signals: createdTitles,
-      fetchedAt: new Date().toISOString(),
-    })
-  } catch (err) {
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 })
+      const cause = err?.cause ?? err?.originalError ?? err?.original ?? err
+      console.error('INSERT FAILED (cause):', {
+        message: cause?.message ?? err?.message,
+        code: cause?.code,
+        detail: cause?.detail,
+        constraint: cause?.constraint,
+        table: cause?.table,
+        column: cause?.column,
+      })
+
+      errors.push({
+        title: signal?.title,
+        reason: cause?.message ?? err?.message ?? 'Insert failed',
+      })
+
+      // ✅ continue inserting others
+      continue
+    }
   }
+
+  return NextResponse.json({
+    success: true,
+    mode,
+    keyword: mode === 'keyword' ? keyword : null,
+    fetched: allSignals.length,
+    detected: inserted,
+    failed,
+    categories: results.map((r) => ({ category: r.category, count: r.signals.length })),
+    errors: errors.slice(0, 10), // don’t spam response
+    fetchedAt: new Date().toISOString(),
+  })
 }

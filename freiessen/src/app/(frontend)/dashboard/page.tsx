@@ -6,19 +6,20 @@ import DashboardClient from './DasboardClient'
 export default async function DashboardPage() {
   const payload = await getPayload({ config })
 
-  // cookies() is async in Next.js 15
-  const cookieStore = await cookies()
+  let signals: any[] = []
+  let loadError: string | null = null
 
-  const { user } = await payload.auth({
-    headers: new Headers({
-      cookie: cookieStore.toString(),
-    }),
-  })
+  try {
+    const res = await payload.find({
+      collection: 'signals',
+      limit: 100,
+    })
+    signals = res?.docs ?? []
+  } catch (err) {
+    // Don’t crash the page if DB/table isn’t ready
+    loadError = err instanceof Error ? err.message : 'Could not load signals from the database.'
+    signals = []
+  }
 
-  const { docs: signals } = await payload.find({
-    collection: 'signals',
-    limit: 100,
-  })
-
-  return <DashboardClient signals={signals as any[]} />
+  return <DashboardClient signals={signals} loadError={loadError} />
 }
