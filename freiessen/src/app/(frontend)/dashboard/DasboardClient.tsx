@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Signal } from '@/lib/signals/types'
 import type { UseCase } from '@/lib/signals/constants'
-import { getMetrics } from '@/lib/signals/scoring'
+import { getMetrics, type SignalMetrics } from '@/lib/signals/scoring'
 import { UseCaseTabs } from './UseCaseTabs'
 import { SignalStrengthChart } from './SingleStrengthChart'
 import { SignalList } from './SignalList'
@@ -12,7 +12,7 @@ import { AutomatedDetectionPanel } from './AutomatedDetectionPanel'
 import { CompetitorSignalsChart } from './CompetitorSignalsChart'
 
 export default function DashboardClient({
-  signals,
+  signals: initialSignals,
   competitors,
   useCases,
   loadError,
@@ -24,22 +24,69 @@ export default function DashboardClient({
 }) {
   const router = useRouter()
 
+  // ---- UI state (no naming collisions) ----
   const [detectWarning, setDetectWarning] = useState<string | null>(null)
   const [detectError, setDetectError] = useState<string | null>(null)
-
   const [detecting, setDetecting] = useState(false)
   const [lastDetected, setLastDetected] = useState<string | null>(null)
-  const [detectedCount, setDetectedCount] = useState<number | null>(null)
+
+  // If you still want to display what the SERVER said after running /api/detect-signals,
+  // keep it separate from derived detection:
+  const [serverDetectedCount, setServerDetectedCount] = useState<number | null>(null)
+
   const [keyword, setKeyword] = useState('')
 
   const [activeUC, setActiveUC] = useState<string>('') // set after useCases load
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  // ✅ ensure we always have a valid active use-case when useCases changes
+  // ---- Ensure active use-case is valid ----
   useEffect(() => {
     if (!useCases?.length) return
     setActiveUC((prev) => (prev && useCases.some((u) => u.id === prev) ? prev : useCases[0].id))
   }, [useCases])
+
+  // ---- Selected use-case ----
+  const uc = useMemo(() => {
+    if (!useCases?.length) {
+      return {
+        id: 'uc1',
+        label: 'Use Cases',
+        icon: '📌',
+        description: 'No use-cases found. Seed the collection.',
+        types: [],
+      } as UseCase
+    }
+    return useCases.find((u) => u.id === activeUC) ?? useCases[0]
+  }, [activeUC, useCases])
+
+  // ---- Filter signals by use-case ----
+  const byUC = useMemo(() => {
+    if (!uc.types?.length) return initialSignals
+    return initialSignals.filter((s) => uc.types.includes(s.signal_type))
+  }, [initialSignals, uc.types])
+
+  // ---- Compute metrics once and reuse across chart + list + detection ----
+  const metricsById = useMemo(() => {
+    const map = new Map<string, SignalMetrics>()
+    for (const s of byUC) {
+      const id = (s as any).id
+      if (!id) continue
+      map.set(String(id), getMetrics(s, { competitors, activeUseCase: uc }))
+    }
+    return map
+  }, [byUC, competitors, uc])
+
+  // ---- DERIVED detection (updates automatically when new signals are fetched) ----
+  const detectedSignals = useMemo(() => {
+    return byUC.filter((s) => {
+      const id = String((s as any).id ?? '')
+      const m = metricsById.get(id) ?? getMetrics(s, { competitors, activeUseCase: uc })
+      const score = (m.freshness + m.evidenceQuality + m.relevance) / 3
+      return score >= 60
+    })
+  }, [byUC, metricsById, competitors, uc])
+
+  const derivedDetectedCount = detectedSignals.length
 
   async function runDetection(mode: 'all' | 'keyword' = 'all') {
     setDetectError(null)
@@ -61,10 +108,11 @@ export default function DashboardClient({
         body: JSON.stringify(body),
       })
 
-      const data = await res.json().catch(() => ({}))
+      const data = await res.json().catch(() => ({}) as any)
       if (!res.ok) throw new Error(data?.error ?? `Detection failed (HTTP ${res.status})`)
 
-      setDetectedCount(data.detected ?? 0)
+      // Keep server result separate (no conflict with derived count)
+      setServerDetectedCount(typeof data?.detected === 'number' ? data.detected : 0)
       setLastDetected(new Date().toLocaleTimeString())
 
       router.refresh()
@@ -75,40 +123,12 @@ export default function DashboardClient({
     }
   }
 
-  const uc = useMemo(() => {
-    if (!useCases?.length) {
-      return {
-        id: 'uc1',
-        label: 'Use Cases',
-        icon: '📌',
-        description: 'No use-cases found. Seed the collection.',
-        types: [],
-      } as UseCase
-    }
-    return useCases.find((u) => u.id === activeUC) ?? useCases[0]
-  }, [activeUC, useCases])
-
-  const byUC = useMemo(() => {
-    if (!uc.types?.length) return signals
-    return signals.filter((s) => uc.types.includes(s.signal_type))
-  }, [signals, uc.types])
-
-  const metricsById = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof getMetrics>>()
-    for (const s of byUC) {
-      const id = (s as any).id
-      if (!id) continue
-      map.set(String(id), getMetrics(s, { competitors, activeUseCase: uc }))
-    }
-    return map
-  }, [byUC, competitors, uc])
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="bg-white border-b border-gray-200 px-6 py-5">
         <h1 className="text-2xl font-bold text-gray-900">Market Signal Dashboard</h1>
         <p className="text-gray-400 text-sm mt-0.5">
-          Last updated: {new Date().toLocaleDateString()} · {signals.length} signals tracked
+          Last updated: {new Date().toLocaleDateString()} · {initialSignals.length} signals tracked
         </p>
       </div>
 
@@ -134,7 +154,10 @@ export default function DashboardClient({
         <AutomatedDetectionPanel
           detecting={detecting}
           lastDetected={lastDetected}
-          detectedCount={detectedCount}
+          // ✅ show derived count so it changes when new data is fetched
+          detectedCount={derivedDetectedCount}
+          // (optional) if you want to display server result too, update the panel to accept it
+          // serverDetectedCount={serverDetectedCount}
           keyword={keyword}
           setKeyword={setKeyword}
           runDetection={runDetection}
@@ -149,12 +172,7 @@ export default function DashboardClient({
           }}
         />
 
-        {/* ✅ pass metricsById + choose which metric to show */}
-        <SignalStrengthChart
-          signals={byUC}
-          metricsById={metricsById}
-          metric="relevance" // or "freshness" | "evidenceQuality"
-        />
+        <SignalStrengthChart signals={byUC} metricsById={metricsById} metric="relevance" />
 
         <CompetitorSignalsChart signals={byUC} competitors={competitors} />
 
