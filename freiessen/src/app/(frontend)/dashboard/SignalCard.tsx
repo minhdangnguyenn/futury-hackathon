@@ -7,7 +7,7 @@ function MetricBar({ value }: { value: number }) {
   const v = Math.max(0, Math.min(100, value || 0))
   return (
     <div className="h-2 w-full rounded-full bg-gray-100 border border-gray-200 overflow-hidden">
-      <div className="h-full bg-gray-900" style={{ width: `${v}%` }} />
+      <div className="h-2 bg-yellow-400" style={{ width: `${Math.max(0, Math.min(100, v))}%` }} />
     </div>
   )
 }
