@@ -74,7 +74,6 @@ export interface Config {
     signals: Signal;
     'use-cases': UseCase;
     metrics: Metric;
-    personas: Persona;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -89,7 +88,6 @@ export interface Config {
     signals: SignalsSelect<false> | SignalsSelect<true>;
     'use-cases': UseCasesSelect<false> | UseCasesSelect<true>;
     metrics: MetricsSelect<false> | MetricsSelect<true>;
-    personas: PersonasSelect<false> | PersonasSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -155,18 +153,6 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "personas".
- */
-export interface Persona {
-  id: number;
-  key: string;
-  name: string;
-  description?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -381,10 +367,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'metrics';
         value: number | Metric;
-      } | null)
-    | ({
-        relationTo: 'personas';
-        value: number | Persona;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -571,17 +553,6 @@ export interface MetricsSelect<T extends boolean = true> {
   config?: T;
   scaleMin?: T;
   scaleMax?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "personas_select".
- */
-export interface PersonasSelect<T extends boolean = true> {
-  key?: T;
-  name?: T;
-  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }

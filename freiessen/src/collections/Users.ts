@@ -9,14 +9,14 @@ const Users: CollectionConfig = {
       label: 'Name',
       type: 'text',
     },
-    {
-      name: 'persona',
-      label: 'Persona',
-      type: 'relationship',
-      relationTo: 'personas',
-      required: false, // null by default
-      admin: { position: 'sidebar' },
-    },
+    // {
+    //   name: 'persona',
+    //   label: 'Persona',
+    //   type: 'relationship',
+    //   relationTo: 'personas',
+    //   required: false, // null by default
+    //   admin: { position: 'sidebar' },
+    // },
   ],
 }
 
