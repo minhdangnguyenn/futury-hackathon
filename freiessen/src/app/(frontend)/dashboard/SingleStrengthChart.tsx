@@ -6,6 +6,33 @@ import type { SignalMetrics } from '@/lib/signals/scoring'
 
 type MetricKey = keyof SignalMetrics
 
+function MetricButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'px-3 py-1.5 rounded-lg text-sm border transition-colors',
+        // ✅ prevent default "black-ish" focus styles and use a blue focus ring instead
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+        active
+          ? 'bg-blue-600 border-blue-600 text-white'
+          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function SignalStrengthChart({
   signals,
   metricsById,
@@ -15,7 +42,6 @@ export function SignalStrengthChart({
   metricsById: Map<string, SignalMetrics>
   metric?: MetricKey
 }) {
-  // local selection, seeded from prop (or default to relevance)
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>(metric ?? 'relevance')
 
   const rows = useMemo(() => {
@@ -23,11 +49,7 @@ export function SignalStrengthChart({
       const id = String((s as any).id ?? (s as any)._id ?? '')
       const m = id ? metricsById.get(id) : undefined
       const value = m ? m[selectedMetric] : 0
-      return {
-        id,
-        signal: s,
-        value,
-      }
+      return { id, signal: s, value }
     })
   }, [signals, metricsById, selectedMetric])
 
@@ -45,7 +67,7 @@ export function SignalStrengthChart({
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="font-semibold text-gray-900">Signal Metrics Overview</h2>
           <p className="text-xs text-gray-500 mt-1">
@@ -53,25 +75,31 @@ export function SignalStrengthChart({
           </p>
         </div>
 
-        {/* Dropdown */}
+        {/* ✅ Buttons instead of dropdown */}
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600" htmlFor="metricSelect">
-            Metric
-          </label>
-          <select
-            id="metricSelect"
-            className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white"
-            value={selectedMetric}
-            onChange={(e) => setSelectedMetric(e.target.value as MetricKey)}
+          <MetricButton
+            active={selectedMetric === 'relevance'}
+            onClick={() => setSelectedMetric('relevance')}
           >
-            <option value="relevance">Relevance</option>
-            <option value="freshness">Freshness</option>
-            <option value="evidenceQuality">Evidence quality</option>
-          </select>
+            Relevance
+          </MetricButton>
+
+          <MetricButton
+            active={selectedMetric === 'freshness'}
+            onClick={() => setSelectedMetric('freshness')}
+          >
+            Freshness
+          </MetricButton>
+
+          <MetricButton
+            active={selectedMetric === 'evidenceQuality'}
+            onClick={() => setSelectedMetric('evidenceQuality')}
+          >
+            Evidence quality
+          </MetricButton>
         </div>
       </div>
 
-      {/* Bar list chart */}
       <div className="mt-4 space-y-2">
         {rows.slice(0, 12).map((r) => (
           <div key={r.id} className="flex items-center gap-3">
@@ -80,7 +108,7 @@ export function SignalStrengthChart({
             </div>
 
             <div className="flex-1 bg-gray-100 rounded h-2 overflow-hidden">
-              {/* ✅ yellow bars (instead of black) */}
+              {/* ✅ yellow bars */}
               <div
                 className="h-2 bg-yellow-400"
                 style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }}
