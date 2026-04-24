@@ -153,6 +153,17 @@ export function SignalCard({
               </div>
             </div>
           ) : null}
+
+          {signal.token && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <a
+                href={`/dashboard/signal/t/${signal.token}`}
+                className="text-xs font-semibold text-gray-700 hover:text-gray-900 underline"
+              >
+                View full detail →
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>

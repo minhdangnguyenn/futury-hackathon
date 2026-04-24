@@ -4,6 +4,7 @@ export type Signal = {
   summary?: string
   signal_type: string
   source?: string
+  token?: string
   trend_metrics?: {
     momentum?: number
     impact?: number

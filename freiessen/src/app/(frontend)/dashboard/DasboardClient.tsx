@@ -11,6 +11,8 @@ import { SignalList } from './SignalList'
 import { AutomatedDetectionPanel } from './AutomatedDetectionPanel'
 import { CompetitorSignalsChart } from './CompetitorSignalsChart'
 
+type CompetitorWithToken = { id: string; name: string; token: string }
+
 export default function DashboardClient({
   signals: initialSignals,
   competitors,
@@ -18,34 +20,27 @@ export default function DashboardClient({
   loadError,
 }: {
   signals: Signal[]
-  competitors: { id: string; name: string }[]
+  competitors: CompetitorWithToken[]
   useCases: UseCase[]
   loadError?: string | null
 }) {
   const router = useRouter()
 
-  // ---- UI state (no naming collisions) ----
   const [detectWarning, setDetectWarning] = useState<string | null>(null)
   const [detectError, setDetectError] = useState<string | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [lastDetected, setLastDetected] = useState<string | null>(null)
-
-  // If you still want to display what the SERVER said after running /api/detect-signals,
-  // keep it separate from derived detection:
   const [serverDetectedCount, setServerDetectedCount] = useState<number | null>(null)
 
   const [keyword, setKeyword] = useState('')
-
   const [activeUC, setActiveUC] = useState<string>('') // set after useCases load
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  // ---- Ensure active use-case is valid ----
   useEffect(() => {
     if (!useCases?.length) return
     setActiveUC((prev) => (prev && useCases.some((u) => u.id === prev) ? prev : useCases[0].id))
   }, [useCases])
 
-  // ---- Selected use-case ----
   const uc = useMemo(() => {
     if (!useCases?.length) {
       return {
@@ -59,13 +54,11 @@ export default function DashboardClient({
     return useCases.find((u) => u.id === activeUC) ?? useCases[0]
   }, [activeUC, useCases])
 
-  // ---- Filter signals by use-case ----
   const byUC = useMemo(() => {
     if (!uc.types?.length) return initialSignals
     return initialSignals.filter((s) => uc.types.includes(s.signal_type))
   }, [initialSignals, uc.types])
 
-  // ---- Compute metrics once and reuse across chart + list + detection ----
   const metricsById = useMemo(() => {
     const map = new Map<string, SignalMetrics>()
     for (const s of byUC) {
@@ -76,7 +69,6 @@ export default function DashboardClient({
     return map
   }, [byUC, competitors, uc])
 
-  // ---- DERIVED detection (updates automatically when new signals are fetched) ----
   const detectedSignals = useMemo(() => {
     return byUC.filter((s) => {
       const id = String((s as any).id ?? '')
@@ -111,7 +103,6 @@ export default function DashboardClient({
       const data = await res.json().catch(() => ({}) as any)
       if (!res.ok) throw new Error(data?.error ?? `Detection failed (HTTP ${res.status})`)
 
-      // Keep server result separate (no conflict with derived count)
       setServerDetectedCount(typeof data?.detected === 'number' ? data.detected : 0)
       setLastDetected(new Date().toLocaleTimeString())
 
@@ -154,10 +145,7 @@ export default function DashboardClient({
         <AutomatedDetectionPanel
           detecting={detecting}
           lastDetected={lastDetected}
-          // ✅ show derived count so it changes when new data is fetched
           detectedCount={derivedDetectedCount}
-          // (optional) if you want to display server result too, update the panel to accept it
-          // serverDetectedCount={serverDetectedCount}
           keyword={keyword}
           setKeyword={setKeyword}
           runDetection={runDetection}
@@ -174,6 +162,7 @@ export default function DashboardClient({
 
         <SignalStrengthChart signals={byUC} metricsById={metricsById} metric="relevance" />
 
+        {/* ✅ now competitors includes token */}
         <CompetitorSignalsChart signals={byUC} competitors={competitors} />
 
         <div className="flex items-center justify-between mb-4">
