@@ -102,7 +102,8 @@ export default function CompetitorDetailClient({
 
       <div className="p-6 max-w-6xl mx-auto">
         {/* ✅ Pass metricsById here too */}
-        <SignalStrengthChart signals={signals} metricsById={metricsById} />
+
+        <SignalStrengthChart signals={signals} metricsById={metricsById} metric="relevance" />
 
         <div className="bg-white border border-gray-200 rounded-xl p-4 mt-6">
           <h2 className="font-semibold text-gray-800 mb-3">Signal types</h2>
