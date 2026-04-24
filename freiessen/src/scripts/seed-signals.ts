@@ -1,52 +1,43 @@
-import 'dotenv/config'
-import { getPayload } from 'payload'
-import config from '../payload.config'
+import type { Payload } from 'payload'
 import { signalsSeed } from '../seeds/signals.seed'
 
-async function main() {
-  const payload = await getPayload({ config })
+export async function seedSignals(payload: Payload) {
+  payload.logger.info(`Seeding signals (upsert by title): ${signalsSeed.length}`)
 
-  // Load competitors once so we can map names -> numeric IDs
-  const competitorsRes = await payload.find({
-    collection: 'competitors',
-    limit: 500,
-  })
-
-  const competitorIdByName = new Map<string, number>()
-  for (const c of competitorsRes.docs as any[]) {
-    competitorIdByName.set(String(c.name).toLowerCase(), Number(c.id))
-  }
-
-  function idsFromNames(names: string[]) {
-    return names
-      .map((n) => competitorIdByName.get(n.toLowerCase()))
-      .filter((x): x is number => typeof x === 'number' && Number.isFinite(x))
-  }
-
-  console.log('🌱 Seeding signals...')
-
-  for (const raw of signalsSeed) {
-    const r = raw as any
-
-    const competitorNames: string[] = Array.isArray(r?.competitor_names) ? r.competitor_names : []
-    const { competitor_names, ...signal } = r
-
-    await payload.create({
+  for (const s of signalsSeed) {
+    const existing = await payload.find({
       collection: 'signals',
-      data: {
-        ...signal,
-        competitors: competitorNames.length
-          ? idsFromNames(competitorNames)
-          : idsFromNames(['Geberit', 'Aliaxis']),
+      limit: 1,
+      where: {
+        title: { equals: s.title },
       },
+      overrideAccess: true,
     })
+
+    // Make mutable copies (signalsSeed is `as const`)
+    const data: any = {
+      signal_type: s.signal_type,
+      source: s.source,
+      title: s.title,
+      summary: s.summary,
+      entities: s.entities.map((e) => ({ name: e.name, type: e.type })),
+      evidence_urls: s.evidence_urls.map((u) => ({ url: u.url, label: u.label })),
+      trend_metrics: { ...s.trend_metrics },
+    }
+
+    if (existing.docs?.length) {
+      await payload.update({
+        collection: 'signals',
+        id: existing.docs[0].id,
+        data,
+        overrideAccess: true,
+      })
+    } else {
+      await payload.create({
+        collection: 'signals',
+        data,
+        overrideAccess: true,
+      })
+    }
   }
-
-  console.log('🎉 Done seeding signals!')
-  process.exit(0)
 }
-
-main().catch((err) => {
-  console.error('❌ Seed failed:', err)
-  process.exit(1)
-})

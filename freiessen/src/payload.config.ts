@@ -10,6 +10,8 @@ import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Competitors } from './collections/Competitors'
 import Signals from './collections/Signals'
+import { UseCases } from './collections/UseCases'
+import { seedAll } from './seeds'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -21,7 +23,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Pages, Competitors, Signals],
+  collections: [Users, Media, Pages, Competitors, Signals, UseCases],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -34,4 +36,16 @@ export default buildConfig({
   }),
   sharp,
   plugins: [],
+
+  onInit: async (payload) => {
+    payload.logger.info(
+      `DB: ${(process.env.DATABASE_URL || '').replace(/:\/\/.*@/, '://***:***@').slice(0, 120)}`,
+    )
+
+    try {
+      await seedAll(payload)
+    } catch (err) {
+      payload.logger.error({ err }, 'Seeding failed')
+    }
+  },
 })

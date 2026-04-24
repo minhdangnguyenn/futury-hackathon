@@ -1,52 +1,40 @@
-import 'dotenv/config'
-import config from '../payload.config'
-import { getPayload } from 'payload'
+import type { Payload } from 'payload'
 import { competitorsSeed } from '../seeds/competitors.seed'
 
-async function main() {
-  const payload = await getPayload({ config })
-
-  // If your competitors collection requires admin/auth for create/update,
-  // login here and keep using payload instance.
-  // Comment out if your collection is public writable (not recommended).
-  //
-  // await payload.login({
-  //   email: process.env.PAYLOAD_ADMIN_EMAIL!,
-  //   password: process.env.PAYLOAD_ADMIN_PASSWORD!,
-  // })
+export async function seedCompetitors(payload: Payload) {
+  payload.logger.info(`Seeding competitors (upsert by url): ${competitorsSeed.length}`)
 
   for (const competitor of competitorsSeed) {
-    // Check if it already exists by unique URL
     const existing = await payload.find({
       collection: 'competitors',
       limit: 1,
       where: {
-        url: {
-          equals: competitor.url,
-        },
+        url: { equals: competitor.url },
       },
+      overrideAccess: true,
     })
 
+    // Make mutable copies (because competitorsSeed is `as const`)
+    const data = {
+      name: competitor.name,
+      url: competitor.url,
+      country: competitor.country,
+      tags: [...competitor.tags], // remove readonly-ness
+    }
+
     if (existing.docs?.length) {
-      const id = existing.docs[0].id
       await payload.update({
         collection: 'competitors',
-        id,
-        data: competitor,
+        id: existing.docs[0].id,
+        data,
+        overrideAccess: true,
       })
     } else {
       await payload.create({
         collection: 'competitors',
-        data: competitor,
+        data,
+        overrideAccess: true,
       })
     }
   }
-
-  console.log('✅ Seeded competitors:', competitorsSeed.length)
-  process.exit(0)
 }
-
-main().catch((err) => {
-  console.error('❌ Seed failed:', err)
-  process.exit(1)
-})

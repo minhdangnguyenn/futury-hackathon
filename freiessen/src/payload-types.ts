@@ -72,6 +72,7 @@ export interface Config {
     pages: Page;
     competitors: Competitor;
     signals: Signal;
+    'use-cases': UseCase;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +85,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     competitors: CompetitorsSelect<false> | CompetitorsSelect<true>;
     signals: SignalsSelect<false> | SignalsSelect<true>;
+    'use-cases': UseCasesSelect<false> | UseCasesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -256,6 +258,32 @@ export interface Signal {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "use-cases".
+ */
+export interface UseCase {
+  id: number;
+  /**
+   * Stable identifier used by the UI (e.g. "uc1")
+   */
+  key: string;
+  label: string;
+  /**
+   * Emoji or short icon string (e.g. ⚔️)
+   */
+  icon: string;
+  description: string;
+  /**
+   * Signal types included in this use case (e.g. market_shift, disruption)
+   */
+  types: {
+    type: string;
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -297,6 +325,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'signals';
         value: number | Signal;
+      } | null)
+    | ({
+        relationTo: 'use-cases';
+        value: number | UseCase;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -444,6 +476,24 @@ export interface SignalsSelect<T extends boolean = true> {
         novelty?: T;
         impact?: T;
         confidence?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "use-cases_select".
+ */
+export interface UseCasesSelect<T extends boolean = true> {
+  key?: T;
+  label?: T;
+  icon?: T;
+  description?: T;
+  types?:
+    | T
+    | {
+        type?: T;
+        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;
