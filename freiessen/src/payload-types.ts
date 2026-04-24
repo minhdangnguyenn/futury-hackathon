@@ -73,6 +73,7 @@ export interface Config {
     competitors: Competitor;
     signals: Signal;
     'use-cases': UseCase;
+    metrics: Metric;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +87,7 @@ export interface Config {
     competitors: CompetitorsSelect<false> | CompetitorsSelect<true>;
     signals: SignalsSelect<false> | SignalsSelect<true>;
     'use-cases': UseCasesSelect<false> | UseCasesSelect<true>;
+    metrics: MetricsSelect<false> | MetricsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -288,6 +290,33 @@ export interface UseCase {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "metrics".
+ */
+export interface Metric {
+  id: number;
+  key: string;
+  label: string;
+  description?: string | null;
+  enabled?: boolean | null;
+  order?: number | null;
+  color?: string | null;
+  strategy?: string | null;
+  config?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  scaleMin?: number | null;
+  scaleMax?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -333,6 +362,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'use-cases';
         value: number | UseCase;
+      } | null)
+    | ({
+        relationTo: 'metrics';
+        value: number | Metric;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -500,6 +533,24 @@ export interface UseCasesSelect<T extends boolean = true> {
         type?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "metrics_select".
+ */
+export interface MetricsSelect<T extends boolean = true> {
+  key?: T;
+  label?: T;
+  description?: T;
+  enabled?: T;
+  order?: T;
+  color?: T;
+  strategy?: T;
+  config?: T;
+  scaleMin?: T;
+  scaleMax?: T;
   updatedAt?: T;
   createdAt?: T;
 }

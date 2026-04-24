@@ -3,9 +3,16 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import type { Signal } from '@/lib/signals/types'
-import { getRecommendation } from '@/lib/signals/scoring'
+import { getMetrics, type SignalMetrics } from '@/lib/signals/scoring'
 import { SignalStrengthChart } from '@/app/(frontend)/dashboard/SingleStrengthChart'
 import { SignalList } from '@/app/(frontend)/dashboard/SignalList'
+
+function getRecommendationId(metrics: SignalMetrics): 'build' | 'invest' | 'ignore' {
+  const score = (metrics.freshness + metrics.evidenceQuality + metrics.relevance) / 3
+  if (score >= 70) return 'build'
+  if (score >= 50) return 'invest'
+  return 'ignore'
+}
 
 export default function CompetitorDetailClient({
   competitor,
@@ -20,18 +27,29 @@ export default function CompetitorDetailClient({
   }
   signals: Signal[]
 }) {
+  // ✅ Build metrics once and reuse everywhere
+  const metricsById = useMemo(() => {
+    const map = new Map<string, SignalMetrics>()
+    for (const s of signals) map.set(s.id, getMetrics(s))
+    return map
+  }, [signals])
+
   const stats = useMemo(() => {
     const byType: Record<string, number> = {}
-    const byRec: Record<string, number> = { build: 0, invest: 0, ignore: 0 }
+    const byRec: Record<'build' | 'invest' | 'ignore', number> = { build: 0, invest: 0, ignore: 0 }
 
     for (const s of signals) {
       byType[s.signal_type] = (byType[s.signal_type] ?? 0) + 1
-      const rec = getRecommendation(s).id
-      byRec[rec] = (byRec[rec] ?? 0) + 1
+
+      const metrics = metricsById.get(s.id)
+      if (metrics) {
+        const rec = getRecommendationId(metrics)
+        byRec[rec] += 1
+      }
     }
 
     return { byType, byRec, total: signals.length }
-  }, [signals])
+  }, [signals, metricsById])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,10 +101,9 @@ export default function CompetitorDetailClient({
       </div>
 
       <div className="p-6 max-w-6xl mx-auto">
-        {/* Reuse your existing “strength distribution” chart */}
-        <SignalStrengthChart signals={signals} />
+        {/* ✅ Pass metricsById here too */}
+        <SignalStrengthChart signals={signals} metricsById={metricsById} />
 
-        {/* Simple breakdown */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 mt-6">
           <h2 className="font-semibold text-gray-800 mb-3">Signal types</h2>
           <div className="flex flex-wrap gap-2">
@@ -102,7 +119,12 @@ export default function CompetitorDetailClient({
 
         <div className="mt-6">
           <h2 className="font-semibold text-gray-800 mb-3">Signals</h2>
-          <SignalList signals={signals} expandedId={null} setExpandedId={() => {}} />
+          <SignalList
+            signals={signals}
+            metricsById={metricsById}
+            expandedId={null}
+            setExpandedId={() => {}}
+          />
         </div>
       </div>
     </div>
