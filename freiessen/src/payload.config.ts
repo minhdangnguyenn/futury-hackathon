@@ -11,6 +11,7 @@ import { Pages } from './collections/Pages'
 import { Competitors } from './collections/Competitors'
 import Signals from './collections/Signals'
 import { UseCases } from './collections/UseCases'
+import { Metrics } from './collections/Metrics'
 import { seedAll } from './seeds'
 
 const filename = fileURLToPath(import.meta.url)
@@ -23,7 +24,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Pages, Competitors, Signals, UseCases],
+  collections: [Users, Media, Pages, Competitors, Signals, UseCases, Metrics],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
