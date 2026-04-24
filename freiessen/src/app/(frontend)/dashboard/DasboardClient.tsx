@@ -9,6 +9,7 @@ import { UseCaseTabs } from './UseCaseTabs'
 import { SignalStrengthChart } from './SingleStrengthChart'
 import { SignalList } from './SignalList'
 import { AutomatedDetectionPanel } from './AutomatedDetectionPanel'
+import { ChatbotWidget } from './ChatbotWidget'
 import { CompetitorSignalsChart } from './CompetitorSignalsChart'
 
 type CompetitorWithToken = { id: string; name: string; token: string }
@@ -178,6 +179,8 @@ export default function DashboardClient({
           metricsById={metricsById}
         />
       </div>
+
+      <ChatbotWidget />
     </div>
   )
 }
