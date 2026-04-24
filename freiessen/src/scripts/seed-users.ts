@@ -27,7 +27,7 @@ export async function seedUsers(
       email,
       password, // Payload will hash it
       name,
-      role: 'user',
+      role: 'user', // ✅ remove if your schema doesn't have role
     } as any
 
     if (existing.docs.length) {

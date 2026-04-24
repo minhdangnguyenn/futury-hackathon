@@ -10,17 +10,6 @@ const Users: CollectionConfig = {
       type: 'text',
     },
     {
-      name: 'role',
-      label: 'Role',
-      type: 'select',
-      options: [
-        { label: 'User', value: 'user' },
-        { label: 'Admin', value: 'admin' },
-      ],
-      defaultValue: 'user',
-      admin: { position: 'sidebar' },
-    },
-    {
       name: 'persona',
       label: 'Persona',
       type: 'relationship',
