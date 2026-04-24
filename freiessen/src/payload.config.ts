@@ -14,6 +14,8 @@ import { UseCases } from './collections/UseCases'
 import { Metrics } from './collections/Metrics'
 import { seedAll } from './seeds'
 import Personas from './collections/Personas'
+import { OilPrices } from './collections/OilPrice'
+import { GasPrices } from './collections/GasPrice'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -25,7 +27,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Pages, Competitors, Signals, UseCases, Metrics, Personas],
+  collections: [Users, Media, Pages, Competitors, Signals, UseCases, Metrics, Personas, OilPrices, GasPrices],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

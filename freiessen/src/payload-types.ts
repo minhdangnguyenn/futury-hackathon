@@ -75,6 +75,8 @@ export interface Config {
     'use-cases': UseCase;
     metrics: Metric;
     personas: Persona;
+    'oil-prices': OilPrice;
+    'gas-prices': GasPrice;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -90,6 +92,8 @@ export interface Config {
     'use-cases': UseCasesSelect<false> | UseCasesSelect<true>;
     metrics: MetricsSelect<false> | MetricsSelect<true>;
     personas: PersonasSelect<false> | PersonasSelect<true>;
+    'oil-prices': OilPricesSelect<false> | OilPricesSelect<true>;
+    'gas-prices': GasPricesSelect<false> | GasPricesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -331,6 +335,38 @@ export interface Metric {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oil-prices".
+ */
+export interface OilPrice {
+  id: number;
+  date: string;
+  price: number;
+  currency: 'USD' | 'EUR';
+  benchmark: 'Brent' | 'WTI';
+  unit: 'USD/bbl';
+  source?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gas-prices".
+ */
+export interface GasPrice {
+  id: number;
+  date: string;
+  price: number;
+  currency: 'USD' | 'EUR';
+  benchmark: 'TTF' | 'Henry Hub' | 'NBP' | 'JKM';
+  unit: 'USD/MMBtu' | 'EUR/MWh';
+  source?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -384,6 +420,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'personas';
         value: number | Persona;
+      } | null)
+    | ({
+        relationTo: 'oil-prices';
+        value: number | OilPrice;
+      } | null)
+    | ({
+        relationTo: 'gas-prices';
+        value: number | GasPrice;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -580,6 +624,36 @@ export interface MetricsSelect<T extends boolean = true> {
 export interface PersonasSelect<T extends boolean = true> {
   title?: T;
   description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oil-prices_select".
+ */
+export interface OilPricesSelect<T extends boolean = true> {
+  date?: T;
+  price?: T;
+  currency?: T;
+  benchmark?: T;
+  unit?: T;
+  source?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gas-prices_select".
+ */
+export interface GasPricesSelect<T extends boolean = true> {
+  date?: T;
+  price?: T;
+  currency?: T;
+  benchmark?: T;
+  unit?: T;
+  source?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }
