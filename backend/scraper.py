@@ -5,6 +5,8 @@ import feedparser
 import trafilatura
 import psycopg2
 from psycopg2.extras import execute_values
+from datetime import datetime, timezone
+import time
 
 
 # --- PREPROCESSING ---
@@ -84,12 +86,19 @@ def save_to_db(signals):
     conn = get_db_connection()
     try:
         insert_query = """
-            INSERT INTO market_signals (signal_id, source_type, source_name, raw_text)
+            INSERT INTO market_signals (signal_id, source_type, source_name, raw_text, published_at)
             VALUES %s
             ON CONFLICT (signal_id) DO NOTHING;
         """
+        # Added s['published_at'] to the tuple
         values = [
-            (s["signal_id"], s["source_type"], s["source_name"], s["raw_text"])
+            (
+                s["signal_id"],
+                s["source_type"],
+                s["source_name"],
+                s["raw_text"],
+                s["published_at"],
+            )
             for s in signals
         ]
 
@@ -133,6 +142,13 @@ def execute_reddit_strategy(source_name, url, source_type):
             title = data["title"]
             body = data.get("selftext", "")
 
+            # Extract Reddit's Unix timestamp
+            created_utc = data.get("created_utc")
+            if created_utc:
+                published_at = datetime.fromtimestamp(created_utc, tz=timezone.utc)
+            else:
+                published_at = datetime.now(timezone.utc)
+
             # Dynamic sub-request for comments
             comments_url = (
                 f"https://www.reddit.com/r/{subreddit}/comments/{post_id}.json?limit=3"
@@ -146,13 +162,14 @@ def execute_reddit_strategy(source_name, url, source_type):
             except:
                 comments = "No comments."
 
-            full_context = f"TITLE: {title}\nPOST: {body}\nTOP COMMENTS: {comments}"
+            full_context = f"DATE: {published_at.strftime('%Y-%m-%d')}\nTITLE: {title}\nPOST: {body}\nTOP COMMENTS: {comments}"
             signals.append(
                 {
                     "signal_id": f"reddit_{post_id}",
                     "source_type": source_type,
                     "source_name": source_name,
                     "raw_text": clean_text(full_context),
+                    "published_at": published_at,  # <--- New field
                 }
             )
 
@@ -171,12 +188,25 @@ def execute_rss_strategy(source_name, url, source_type):
         signals = []
         for entry in feed.entries[:3]:
             article_text = fetch_article_text(entry.link)
+
+            # Extract RSS time struct and convert to datetime
+            parsed_time = entry.get("published_parsed")
+            if parsed_time:
+                published_at = datetime.fromtimestamp(
+                    time.mktime(parsed_time), tz=timezone.utc
+                )
+            else:
+                published_at = datetime.now(timezone.utc)
+
+            full_context = f"DATE: {published_at.strftime('%Y-%m-%d')}\nTITLE: {entry.title}\nCONTENT: {article_text}"
+
             signals.append(
                 {
                     "signal_id": f"news_{entry.id}",
                     "source_type": source_type,
                     "source_name": source_name,
-                    "raw_text": f"TITLE: {entry.title}\nCONTENT: {article_text}",
+                    "raw_text": clean_text(full_context),
+                    "published_at": published_at,  # <--- New field
                 }
             )
 
