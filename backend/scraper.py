@@ -75,7 +75,8 @@ def scrape_reddit_market_signals():
     signals = []
     for post in posts:
         data = post["data"]
-        if data.get("selftext"):
+        # Filter for actual text, AND ensure it is not a pinned mod post
+        if data.get("selftext") and not data.get("stickied"):
             signals.append(
                 {
                     "signal_id": f"reddit_{data['id']}",

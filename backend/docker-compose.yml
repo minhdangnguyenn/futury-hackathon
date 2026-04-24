@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  scraper:
+    build: .
+    env_file:
+      - .env
+    command: ["python", "scraper.py"]
+    # In a real app we'd use a cron, but for vibe coding, 
+    # we'll just run it once. You can use 'restart: always' and a sleep() in python if you want it to loop.
+
+  ai_worker:
+    build: .
+    env_file:
+      - .env
+    command: ["python", "ai_worker.py"]
+    # This tells docker-compose to start the scraper first
+    depends_on:
+      scraper:
+        condition: service_completed_successfully
