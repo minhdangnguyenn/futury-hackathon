@@ -1,33 +1,45 @@
+import asyncio
+import os
 import requests
 import feedparser
+import trafilatura
 import psycopg2
 from psycopg2.extras import execute_values
-import os
-import time
 
 
-# --- Database Setup ---
+# --- PREPROCESSING ---
+def clean_text(text, max_chars=3000):
+    if not text:
+        return ""
+    clean = " ".join(text.split())
+    return clean[:max_chars] + "..." if len(clean) > max_chars else clean
+
+
+def fetch_article_text(url):
+    try:
+        downloaded = trafilatura.fetch_url(url)
+        if downloaded:
+            return clean_text(trafilatura.extract(downloaded))
+    except Exception:
+        pass
+    return "Content extraction failed."
+
+
+# --- DATABASE LOGIC ---
 def get_db_connection():
-    # Retry logic because the scraper might boot up milliseconds before Postgres is ready
-    retries = 5
-    while retries > 0:
-        try:
-            conn = psycopg2.connect(
-                host=os.getenv("DB_HOST", "localhost"),
-                database=os.getenv("DB_NAME", "signalforge"),
-                user=os.getenv("DB_USER", "viega_user"),
-                password=os.getenv("DB_PASS", "vibe_password"),
-            )
-            return conn
-        except psycopg2.OperationalError:
-            print("Waiting for database...")
-            time.sleep(2)
-            retries -= 1
-    raise Exception("Could not connect to the database")
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASS"),
+    )
 
 
-def init_db(conn):
+def init_db():
+    """Self-healing setup for the scraper."""
+    conn = get_db_connection()
     with conn.cursor() as cur:
+        # 1. Ensure the raw signals table exists
         cur.execute("""
             CREATE TABLE IF NOT EXISTS market_signals (
                 id SERIAL PRIMARY KEY,
@@ -38,87 +50,186 @@ def init_db(conn):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
+        # 2. Ensure the configurable sources table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS scraping_sources (
+                id SERIAL PRIMARY KEY,
+                source_name VARCHAR(100) UNIQUE,
+                url TEXT,
+                source_type VARCHAR(50), 
+                strategy VARCHAR(50),
+                is_active BOOLEAN DEFAULT TRUE
+            );
+        """)
+
+        # 3. Seed the database with our default scraping targets
+        cur.execute("""
+            INSERT INTO scraping_sources (source_name, url, source_type, strategy) VALUES
+            ('r/Plumbing', 'https://www.reddit.com/r/Plumbing/hot.json?limit=5', 'forum_discussion', 'reddit_json'),
+            ('Geberit & NIBCO News', 'https://news.google.com/rss/search?q=Geberit+OR+NIBCO+plumbing&hl=en-US&gl=US&ceid=US:en', 'competitor_news', 'google_news_rss'),
+            ('Competitor Patents', 'https://news.google.com/rss/search?q=patent+(Geberit+OR+NIBCO+OR+Viega)&hl=en-US&gl=US&ceid=US:en', 'patent_filing', 'google_news_rss')
+            ON CONFLICT (source_name) DO NOTHING;
+        """)
     conn.commit()
+    conn.close()
+    print("Scraper: Database tables verified and seeded.")
 
 
-def save_to_db(conn, signals):
+def save_to_db(signals):
+    """Thread-safe DB insert. Each thread opens its own connection."""
     if not signals:
         return
 
-    # We use execute_values for fast batch insertion
-    insert_query = """
-        INSERT INTO market_signals (signal_id, source_type, source_name, raw_text)
-        VALUES %s
-        ON CONFLICT (signal_id) DO NOTHING;
-    """
+    conn = get_db_connection()
+    try:
+        insert_query = """
+            INSERT INTO market_signals (signal_id, source_type, source_name, raw_text)
+            VALUES %s
+            ON CONFLICT (signal_id) DO NOTHING;
+        """
+        values = [
+            (s["signal_id"], s["source_type"], s["source_name"], s["raw_text"])
+            for s in signals
+        ]
 
-    values = [
-        (s["signal_id"], s["source_type"], s["source_name"], s["raw_text"])
-        for s in signals
-    ]
+        with conn.cursor() as cur:
+            execute_values(cur, insert_query, values)
+        conn.commit()
+        print(
+            f"✅ Saved {len(signals)} signals from {signals[0]['source_name']} to DB."
+        )
+    except Exception as e:
+        print(f"Database insertion failed for {signals[0]['source_name']}: {e}")
+    finally:
+        conn.close()
 
-    with conn.cursor() as cur:
-        execute_values(cur, insert_query, values)
-    conn.commit()
-    print(f"Inserted batch of {len(signals)} signals into Postgres.")
 
+# --- STRATEGIES ---
+def execute_reddit_strategy(source_name, url, source_type):
+    """Strategy for parsing dynamic Reddit JSON endpoints."""
+    headers = {"User-Agent": "ViegaHackathonBot/3.0"}
 
-# --- Scraping Logic (Same as before) ---
-def scrape_reddit_market_signals():
-    url = "https://www.reddit.com/r/Plumbing/hot.json?limit=10"
-    headers = {"User-Agent": "ViegaHackathonBot/1.0"}
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
+    # Dynamically extract subreddit from the config URL
+    # e.g., "https://www.reddit.com/r/HVAC/hot.json" -> "HVAC"
+    try:
+        subreddit = url.split("/r/")[1].split("/")[0]
+    except IndexError:
+        print(f"Invalid Reddit URL format: {url}")
         return []
 
-    posts = response.json()["data"]["children"]
-    signals = []
-    for post in posts:
-        data = post["data"]
-        # Filter for actual text, AND ensure it is not a pinned mod post
-        if data.get("selftext") and not data.get("stickied"):
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return []
+
+        signals = []
+        for post in response.json().get("data", {}).get("children", []):
+            data = post["data"]
+            if data.get("stickied"):
+                continue
+
+            post_id = data["id"]
+            title = data["title"]
+            body = data.get("selftext", "")
+
+            # Dynamic sub-request for comments
+            comments_url = (
+                f"https://www.reddit.com/r/{subreddit}/comments/{post_id}.json?limit=3"
+            )
+            try:
+                c_resp = requests.get(comments_url, headers=headers).json()
+                c_data = c_resp[1]["data"]["children"]
+                comments = " | ".join(
+                    [c["data"].get("body", "") for c in c_data if "body" in c["data"]]
+                )
+            except:
+                comments = "No comments."
+
+            full_context = f"TITLE: {title}\nPOST: {body}\nTOP COMMENTS: {comments}"
             signals.append(
                 {
-                    "signal_id": f"reddit_{data['id']}",
-                    "source_type": "forum_discussion",
-                    "source_name": "r/Plumbing",
-                    "raw_text": f"Title: {data['title']} | Content: {data['selftext'][:500]}...",
+                    "signal_id": f"reddit_{post_id}",
+                    "source_type": source_type,
+                    "source_name": source_name,
+                    "raw_text": clean_text(full_context),
                 }
             )
-    return signals
+
+        # Thread-safe save
+        save_to_db(signals)
+        return signals
+    except Exception as e:
+        print(f"Reddit Strategy Failed ({source_name}): {e}")
+        return []
 
 
-def scrape_competitor_news():
-    url = "https://news.google.com/rss/search?q=Geberit+OR+NIBCO+plumbing&hl=en-US&gl=US&ceid=US:en"
-    feed = feedparser.parse(url)
-    signals = []
-    for entry in feed.entries[:5]:
-        signals.append(
-            {
-                "signal_id": f"news_{entry.id}",
-                "source_type": "competitor_news",
-                "source_name": entry.source.title
-                if "source" in entry
-                else "News Outlet",
-                "raw_text": f"Title: {entry.title} | Link: {entry.link}",
-            }
-        )
-    return signals
+def execute_rss_strategy(source_name, url, source_type):
+    """Strategy for parsing RSS feeds with Trafilatura deep-extraction."""
+    try:
+        feed = feedparser.parse(url)
+        signals = []
+        for entry in feed.entries[:3]:
+            article_text = fetch_article_text(entry.link)
+            signals.append(
+                {
+                    "signal_id": f"news_{entry.id}",
+                    "source_type": source_type,
+                    "source_name": source_name,
+                    "raw_text": f"TITLE: {entry.title}\nCONTENT: {article_text}",
+                }
+            )
+
+        # Thread-safe save
+        save_to_db(signals)
+        return signals
+    except Exception as e:
+        print(f"RSS Strategy Failed ({source_name}): {e}")
+        return []
 
 
-# --- Main Execution ---
-if __name__ == "__main__":
-    print("Connecting to DB...")
+# --- ROUTER & ORCHESTRATOR ---
+def route_strategy(source_config):
+    """Routes the DB config to the correct python function."""
+    _, name, url, source_type, strategy, _ = source_config
+    print(f"Starting thread for {name}...")
+
+    if strategy == "reddit_json":
+        return execute_reddit_strategy(name, url, source_type)
+    elif strategy == "google_news_rss":
+        return execute_rss_strategy(name, url, source_type)
+    else:
+        print(f"Unknown strategy: {strategy}")
+        return []
+
+
+async def main():
+    # 1. Initialize tables and seed default data
+    init_db()
+
     conn = get_db_connection()
-    init_db(conn)
-
-    print("Scraping Reddit...")
-    market_data = scrape_reddit_market_signals()
-    save_to_db(conn, market_data)
-
-    print("Scraping News...")
-    competitor_data = scrape_competitor_news()
-    save_to_db(conn, competitor_data)
-
+    # 2. Fetch active configurations from the database
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, source_name, url, source_type, strategy, is_active FROM scraping_sources WHERE is_active = TRUE;"
+        )
+        active_sources = cur.fetchall()
     conn.close()
-    print("Vibe check passed. Data is secured.")
+
+    if not active_sources:
+        print("No active scraping sources found in DB.")
+        return
+
+    print(
+        f"Found {len(active_sources)} active providers. Executing parallel threads..."
+    )
+
+    # 3. FAN-OUT: Run all blocking web scrapers concurrently
+    tasks = [asyncio.to_thread(route_strategy, source) for source in active_sources]
+
+    await asyncio.gather(*tasks)
+    print("Data extraction and insertion complete!")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
