@@ -4,3 +4,4 @@ psycopg2-binary
 google-genai
 trafilatura
 python-dotenv
+playwright==1.58.0

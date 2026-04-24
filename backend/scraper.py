@@ -7,6 +7,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime, timezone
 import time
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 
 # --- PREPROCESSING ---
@@ -18,13 +19,80 @@ def clean_text(text, max_chars=3000):
 
 
 def fetch_article_text(url):
+    """Uses a headless Chromium browser to bypass GDPR walls and extract text."""
+
+    # Resolve the Google News redirect first using standard requests
+    # Playwright can do this, but requests is faster for the initial hop
     try:
-        downloaded = trafilatura.fetch_url(url)
-        if downloaded:
-            return clean_text(trafilatura.extract(downloaded))
-    except Exception:
-        pass
-    return "Content extraction failed."
+        real_url_response = requests.head(url, allow_redirects=True, timeout=5)
+        target_url = real_url_response.url
+    except:
+        target_url = url
+
+    print(f"Playwright targeting: {target_url}")
+
+    # Because our orchestrator uses asyncio.to_thread, we use sync_playwright here
+    # to keep it isolated safely within its own thread.
+    with sync_playwright() as p:
+        # Launch Chromium headless
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            # user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            # viewport={"width": 1920, "height": 1080},
+        )
+        page = context.new_page()
+
+        try:
+            # Go to the URL and wait until the network is mostly idle
+            page.goto(target_url, timeout=20000, wait_until="domcontentloaded")
+
+            # THE COOKIE DESTROYER: Look for common accept buttons and click them
+            # We use CSS selectors targeting common button texts in English and German
+            cookie_selectors = [
+                "button:has-text('Accept All')",
+                "button:has-text('Accept')",
+                "button:has-text('Agree')",
+                "button:has-text('I Agree')",
+                "button:has-text('Zustimmen')",
+                "button:has-text('Akzeptieren')",
+                "button:has-text('Alle akzeptieren')",
+            ]
+
+            for selector in cookie_selectors:
+                try:
+                    # Try to find and click the button quickly
+                    btn = page.locator(selector).first
+                    if btn.is_visible(timeout=1000):
+                        btn.click()
+                        print(f"Clicked cookie button on {target_url}")
+                        break
+                except PlaywrightTimeoutError:
+                    continue
+                except Exception:
+                    continue
+
+            page.wait_for_selector("h1", timeout=10000)
+            page.wait_for_load_state("domcontentloaded")
+
+            # Grab the fully rendered HTML after the wall is gone
+            html_content = page.content()
+
+            # Let Trafilatura cleanly strip the menus and ads from the raw HTML
+            extracted_text = trafilatura.extract(
+                html_content, favor_precision=True, include_comments=False
+            )
+
+            if extracted_text:
+                return clean_text(extracted_text)
+            else:
+                return "Playwright extracted the page, but Trafilatura found no main content."
+
+        except PlaywrightTimeoutError:
+            return f"Playwright timed out trying to load {target_url}"
+        except Exception as e:
+            return f"Playwright extraction error: {e}"
+        finally:
+            browser.close()
 
 
 # --- DATABASE LOGIC ---
