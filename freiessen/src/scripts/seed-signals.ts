@@ -15,6 +15,17 @@ export async function seedSignals(payload: Payload) {
     })
 
     // Make mutable copies (signalsSeed is `as const`)
+    const companyRes = await payload.find({
+      collection: 'competitors',
+      limit: 1,
+      where: {
+        name: { equals: s.companyName },
+      },
+      overrideAccess: true,
+    })
+
+    const companyId = companyRes.docs?.[0]?.id
+
     const data: any = {
       signal_type: s.signal_type,
       source: s.source,
@@ -23,6 +34,7 @@ export async function seedSignals(payload: Payload) {
       entities: s.entities.map((e) => ({ name: e.name, type: e.type })),
       evidence_urls: s.evidence_urls.map((u) => ({ url: u.url, label: u.label })),
       trend_metrics: { ...s.trend_metrics },
+      ...(companyId ? { company: companyId, competitors: [companyId] } : {}),
     }
 
     if (existing.docs?.length) {
