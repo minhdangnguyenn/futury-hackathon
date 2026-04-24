@@ -1,0 +1,173 @@
+[
+  {
+    "signal_id": "reddit_1su0gmp",
+    "source": {
+      "type": "forum_discussion",
+      "url": null,
+      "date": "2026-04-24",
+      "author": null
+    },
+    "metadata": {
+      "evidence_quality": "low",
+      "relevance_score": 0.9,
+      "freshness_score": 1.0,
+      "sentiment": -0.2,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2026-04-24 TITLE: Had a handyman do my plumbing under this new vanity. Is this incorrect? POST: TOP COMMENTS: It is indeed incorrect. | After the P trap it only has to go horizontal 2 times t..."
+    }
+  },
+  {
+    "signal_id": "reddit_1stysvu",
+    "source": {
+      "type": "forum_discussion",
+      "url": "https://preview.redd.it/dgs9fc4r21xg1.jpeg?width=1284&amp;format=pjpg&amp;auto=webp&amp;s=2e06fc056eff2b68380c003733728dd44d9114ae",
+      "date": "2026-04-23",
+      "author": null
+    },
+    "metadata": {
+      "evidence_quality": "low",
+      "relevance_score": 0.9,
+      "freshness_score": 0.9973,
+      "sentiment": -0.6,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2026-04-23 TITLE: Closing this up tomorrow. Any questions I should ask? POST: TOP COMMENTS: Where the vents at? | Yeah. Like who is the plumber and where did they get their license | https://..."
+    }
+  },
+  {
+    "signal_id": "reddit_1stqa89",
+    "source": {
+      "type": "forum_discussion",
+      "url": null,
+      "date": "2026-04-23",
+      "author": null
+    },
+    "metadata": {
+      "evidence_quality": "low",
+      "relevance_score": 0.95,
+      "freshness_score": 0.9973,
+      "sentiment": 0.1,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2026-04-23 TITLE: Help POST: I am not a plumber just doing DIY smart toilet, why is this happening and what’s the solution? Thanks for help TOP COMMENTS: You also need an insert/stiffener to..."
+    }
+  },
+  {
+    "signal_id": "news_CBMiugFBVV95cUxPdkxXLXo3UlRxZ0JBLXdIU1c0S1B2RlRoWnFpaGhYMUszVmtPLVhCTFdmYnlTTGp3VmU4cWN2VFkxYy1hUEJYVjBDNWlBZWFyU3h0MktWT202b2JqdVpFZ1hsQWtqUlBLU2tXQUl6aWVkdGhWaUgtRGNCRlkxd2lYcDZmdG45NU03TDYyUndBNlFMc1pVcW9ZbkN0Y1RrOE83WUFzSnVmUkNKNW43cVZPSWJtbExEYnFWcHc",
+    "source": {
+      "type": "competitor_news",
+      "url": null,
+      "date": "2026-01-14",
+      "author": "Reuters"
+    },
+    "metadata": {
+      "evidence_quality": "medium",
+      "relevance_score": 0.9,
+      "freshness_score": 0.726,
+      "sentiment": 0.6,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2026-01-14 TITLE: Geberit posts sales boost for Q4, sees slight construction growth in Europe in 2026 - Reuters CONTENT: Content extraction failed."
+    }
+  },
+  {
+    "signal_id": "news_CBMikgFBVV95cUxQNjVfMUlac1hWTloyTnFjc1lBSUxVOTMtNWg5cVFFMHVSWENSTWFVYXhaQVBSc1c4U2ZMUHNReVdjdHdSMmtoX1UzMjBMX3pfN1V0aEJvUXpfLTFHNklDaXRPNjNScnpSU0VwWmkwRVZnOGNhNFFRM3VUcHpkczRQVmh5dDVWTWZnSkxXbFpjci1ZQQ",
+    "source": {
+      "type": "competitor_news",
+      "url": "megaproject.com",
+      "date": "2026-04-13",
+      "author": "megaproject.com"
+    },
+    "metadata": {
+      "evidence_quality": "medium",
+      "relevance_score": 0.9,
+      "freshness_score": 0.9699,
+      "sentiment": 0.0,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2026-04-13 TITLE: NIBCO Expands Its PressG™ Line of Copper Fittings - megaproject.com CONTENT: Content extraction failed."
+    }
+  },
+  {
+    "signal_id": "news_CBMi4wFBVV95cUxOMlRmOVBwM09iN2p5ZE9Bd3hGa0dQcUZXaWVhNnRXX0FMLVkzQzd6clFuOHlsMnRBb1hUck1rSnR2WXRjWE1KZXVUVFQ5eHYyRThFdWZpcFdLbk9wX3R0bXZ4dHo1Y3RZSzl4UExjM3NqWmoyQ2FRaG5MSWZkYjI4eUxEU0pGTUdDZEc3cWpjSW4xUTBGLW1wTVRha2JqNGNMajY0cUM3RXh0WTFPT1lTcF9ocl9mYlFWZ2ppMEFyaXdRckdWQnQ4YnZwTDZrN2pvZGNvUXNyUm5NRmVlV1JRUEU0RQ",
+    "source": {
+      "type": "competitor_news",
+      "url": null,
+      "date": "2025-09-12",
+      "author": null
+    },
+    "metadata": {
+      "evidence_quality": "medium",
+      "relevance_score": 0.9,
+      "freshness_score": 0.3863,
+      "sentiment": -0.8,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2025-09-12 TITLE: Alabama and Texas NIBCO defective products $7.65M class action settlement - Class Action Lawsuits CONTENT: Content extraction failed."
+    }
+  },
+  {
+    "signal_id": "news_CBMijgFBVV95cUxPc19tMzlBNzAydVBYLVBTS2QxRWUtZkszMHNRWUgtVU1laExNaElZRm5reTYtS1RFVUdMSGhYSHZ0NlBsc2ZDbE9ERjF0Y2dwQ3VMUmtSdEdFMzVDUkNIa0dVcmZ4UVNlaHRwamU3MW1jOFJqUUxIenlVdTByWG5nUHQtSUxSQk1MaFVlaGRR",
+    "source": {
+      "type": "patent_filing",
+      "url": null,
+      "date": "2025-05-31",
+      "author": "HPAC Magazine"
+    },
+    "metadata": {
+      "evidence_quality": "medium",
+      "relevance_score": 0.9,
+      "freshness_score": 0.1014,
+      "sentiment": 0.0,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2025-05-31 TITLE: DeWalt Tool and Jaw Set for NIBCO PressACR fittings - HPAC Magazine CONTENT: Content extraction failed."
+    }
+  },
+  {
+    "signal_id": "news_CBMijgFBVV95cUxQRW55M2NMM1RYc010OGdpeU9DSnVXdmlTSzVFWWl3NG1Zc3liRjRQcnVEQ0RZaGYtNnBwbWlOVDE4QnNOZkRaaVpLV3J2TEVqRVNZS0c0d1FKMXJkZDlhMTBqOTNXTUJnTXBCamxQdDlEZy1WSnpLbU1NM1A5NkZrUmJnNzdFRjBsX05tMnJR",
+    "source": {
+      "type": "patent_filing",
+      "url": null,
+      "date": "2024-08-27",
+      "author": "InteriorDaily"
+    },
+    "metadata": {
+      "evidence_quality": "medium",
+      "relevance_score": 0.9,
+      "freshness_score": 0.0,
+      "sentiment": 0.5,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2024-08-27 TITLE: Geberit Group wins lawsuit against VDS - InteriorDaily CONTENT: Content extraction failed."
+    }
+  },
+  {
+    "signal_id": "news_CBMijgFBVV95cUxPMWJSUndFVUpINldyMm5MRUxsM1BMTUZVVlpwM0VpbjlfMGZxLURRZml3b1JObElJZzloSlI2NnFWVjBOdmhsR0Q4TXBnSDZrMGlDaUhiY3ZFRnY3TEY2Q1c2cVRsSXpBRWFXQ0o4X1JpOUE2TGJYeFM2aVA5ZEo3RTU4bWlCMmZoZzFUMDBR0gFWQVVfeXFMTzB5Uk81VEZaMVUyNTFtVWZjNEs0TUh4RUJ1UXpZSHMxTWp4NEtlamFOMzRFSDE4UTlRcVdKT0xYUjgzVi1ZaGVFbXdGSTItWmFtSU51SGc",
+    "source": {
+      "type": "patent_filing",
+      "url": null,
+      "date": "2024-04-17",
+      "author": "Law360"
+    },
+    "metadata": {
+      "evidence_quality": "medium",
+      "relevance_score": 0.9,
+      "freshness_score": 0.0,
+      "sentiment": -0.5,
+      "language": "en"
+    },
+    "extracted_signals": {
+      "raw_text_snippet": "DATE: 2024-04-17 TITLE: Toto's Toilet Patent Flushed Over Obviousness - Law360 CONTENT: Content extraction failed."
+    }
+  }
+]

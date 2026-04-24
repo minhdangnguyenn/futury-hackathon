@@ -126,7 +126,7 @@ def execute_reddit_strategy(source_name, url, source_type):
     try:
         subreddit = url.split("/r/")[1].split("/")[0]
     except IndexError:
-        print(f"Invalid Reddit URL format: {url}")
+        print(f"Reddit URL format: {url}")
         return []
 
     try:

@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  viega-intelligence:
+    build: .
+    container_name: viega-intelligence
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    stdin_open: true # keeps stdin open for input()
+    tty: true # allocates a terminal
+    volumes:
+      - ./logs:/app/logs # persist logs outside container
+    restart: unless-stopped
