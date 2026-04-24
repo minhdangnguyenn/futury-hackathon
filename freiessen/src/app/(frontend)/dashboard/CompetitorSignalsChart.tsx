@@ -96,7 +96,6 @@ export function CompetitorSignalsChart({
           </p>
         </div>
 
-        {/* ✅ Blue toggle buttons */}
         <div className="flex items-center gap-2">
           <ToggleButton active={mode === 'count'} onClick={() => setMode('count')}>
             Count
@@ -115,7 +114,6 @@ export function CompetitorSignalsChart({
               <div className="w-56 truncate text-xs text-gray-700">{r.name}</div>
 
               <div className="flex-1 bg-gray-100 rounded h-2 overflow-hidden">
-                {/* ✅ Yellow bars */}
                 <div
                   className="h-2 bg-yellow-400"
                   style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
@@ -130,7 +128,7 @@ export function CompetitorSignalsChart({
               {competitors.find((c) => c.name === r.name)?.id ? (
                 <Link
                   className="text-xs text-blue-600 hover:underline"
-                  href={`/dashboard/competitors/${competitors.find((c) => c.name === r.name)!.id}`}
+                  href={`/competitors/${competitors.find((c) => c.name === r.name)!.id}`}
                 >
                   View
                 </Link>
