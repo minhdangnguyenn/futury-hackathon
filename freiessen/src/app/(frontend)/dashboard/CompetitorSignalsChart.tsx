@@ -1,8 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import type { Signal } from '@/lib/signals/types'
+import { useRouter } from 'next/navigation'
 
 export type Competitor = {
   id: string
@@ -50,6 +52,14 @@ export function CompetitorSignalsChart({
     () => countSignalsByCompetitor(signals, competitors),
     [signals, competitors],
   )
+
+  const router = useRouter()
+
+  const competitorIdByName = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of competitors) m.set(c.name, c.id)
+    return m
+  }, [competitors])
 
   const chartData = useMemo(() => {
     if (allSelected) return chartDataAll
@@ -101,7 +111,13 @@ export function CompetitorSignalsChart({
               }`}
               title={c.name}
             >
-              {c.name}
+              <Link
+                href={`/competitors/${c.id}`}
+                className="underline underline-offset-2"
+                onClick={(e) => e.stopPropagation()} // important: prevents toggling when navigating
+              >
+                {c.name}
+              </Link>
             </button>
           )
         })}
@@ -119,7 +135,14 @@ export function CompetitorSignalsChart({
           />
           <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
           <Tooltip formatter={(v) => [v, 'Signals']} />
-          <Bar dataKey="count" radius={[6, 6, 0, 0]} />
+          <Bar
+            dataKey="count"
+            radius={[6, 6, 0, 0]}
+            onClick={(data: any) => {
+              const id = competitorIdByName.get(data?.name)
+              if (id) router.push(`/competitors/${id}`)
+            }}
+          />
         </BarChart>
       </ResponsiveContainer>
 
