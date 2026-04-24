@@ -1,27 +1,51 @@
 'use client'
 
 import type { Signal } from '@/lib/signals/types'
-import { getRecommendation } from '@/lib/signals/scoring'
-import { ScoreBar } from './ScoreBar'
+import type { SignalMetrics } from '@/lib/signals/scoring'
+
+function MetricBar({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(100, value || 0))
+  return (
+    <div className="h-2 w-full rounded-full bg-gray-100 border border-gray-200 overflow-hidden">
+      <div className="h-full bg-gray-900" style={{ width: `${v}%` }} />
+    </div>
+  )
+}
 
 export function SignalCard({
   signal,
   expanded,
   onToggle,
+  metrics,
 }: {
   signal: Signal
   expanded: boolean
   onToggle: () => void
+  metrics?: SignalMetrics
 }) {
-  const rec = getRecommendation(signal)
+  const sourceLabel =
+    signal.source === 'hackernews'
+      ? '🟠 HackerNews'
+      : signal.source === 'reddit'
+        ? '🔴 Reddit'
+        : signal.source === 'simulated_news'
+          ? '📰 News'
+          : signal.source === 'simulated_patent'
+            ? '📋 Patent'
+            : signal.source === 'simulated_forum'
+              ? '💬 Forum'
+              : signal.source === 'simulated_release'
+                ? '🚀 Release'
+                : signal.source === 'google_trends'
+                  ? '📈 Google Trends'
+                  : signal.source
 
   return (
-    <div
-      className={`bg-white rounded-xl border border-gray-200 border-l-4 ${rec.border} shadow-sm transition-all`}
-    >
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm transition-all">
       <button
         className="w-full text-left px-5 py-4 flex items-center justify-between gap-4"
         onClick={onToggle}
+        type="button"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -29,18 +53,8 @@ export function SignalCard({
               {(signal.signal_type ?? '').replace(/_/g, ' ')}
             </span>
 
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${rec.badge}`}>
-              {rec.label}
-            </span>
-
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
-              {signal.source === 'hackernews' && '🟠 HackerNews'}
-              {signal.source === 'reddit' && '🔴 Reddit'}
-              {signal.source === 'simulated_news' && '📰 News'}
-              {signal.source === 'simulated_patent' && '📋 Patent'}
-              {signal.source === 'simulated_forum' && '💬 Forum'}
-              {signal.source === 'simulated_release' && '🚀 Release'}
-              {signal.source === 'google_trends' && '📈 Google Trends'}
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+              {sourceLabel}
             </span>
           </div>
 
@@ -48,12 +62,37 @@ export function SignalCard({
             {signal.title}
           </h3>
 
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-gray-400 w-10 shrink-0">Score</span>
-            <div className="flex-1">
-              <ScoreBar value={rec.score} />
+          {/* metrics preview */}
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-gray-400">Freshness</span>
+                <span className="text-[11px] font-semibold text-gray-600">
+                  {metrics?.freshness ?? 0}
+                </span>
+              </div>
+              <MetricBar value={metrics?.freshness ?? 0} />
             </div>
-            <span className="text-xs font-bold text-gray-600 w-8 text-right">{rec.score}</span>
+
+            <div className="min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-gray-400">Evidence</span>
+                <span className="text-[11px] font-semibold text-gray-600">
+                  {metrics?.evidenceQuality ?? 0}
+                </span>
+              </div>
+              <MetricBar value={metrics?.evidenceQuality ?? 0} />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-gray-400">Relevance</span>
+                <span className="text-[11px] font-semibold text-gray-600">
+                  {metrics?.relevance ?? 0}
+                </span>
+              </div>
+              <MetricBar value={metrics?.relevance ?? 0} />
+            </div>
           </div>
         </div>
 
@@ -63,10 +102,6 @@ export function SignalCard({
       {expanded && (
         <div className="px-5 pb-4 border-t border-gray-100 pt-3">
           <p className="text-gray-600 text-sm leading-relaxed mb-3">{signal.summary}</p>
-
-          <div className={`text-sm font-medium px-3 py-2 rounded-lg border mb-3 ${rec.badge}`}>
-            💡 {rec.reason}
-          </div>
 
           {signal.entities?.length ? (
             <div className="mb-3">
@@ -84,15 +119,20 @@ export function SignalCard({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {(['momentum', 'impact', 'novelty', 'confidence'] as const).map((key) => (
-              <div key={key} className="text-center bg-gray-50 rounded-lg p-2">
-                <div className="text-sm font-bold text-gray-800">
-                  {signal.trend_metrics?.[key] ?? 0}
-                </div>
-                <div className="text-xs text-gray-400 capitalize">{key}</div>
-              </div>
-            ))}
+          {/* metrics details */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="text-center bg-gray-50 rounded-lg p-2 border border-gray-100">
+              <div className="text-sm font-bold text-gray-800">{metrics?.freshness ?? 0}</div>
+              <div className="text-xs text-gray-400">Freshness</div>
+            </div>
+            <div className="text-center bg-gray-50 rounded-lg p-2 border border-gray-100">
+              <div className="text-sm font-bold text-gray-800">{metrics?.evidenceQuality ?? 0}</div>
+              <div className="text-xs text-gray-400">Evidence</div>
+            </div>
+            <div className="text-center bg-gray-50 rounded-lg p-2 border border-gray-100">
+              <div className="text-sm font-bold text-gray-800">{metrics?.relevance ?? 0}</div>
+              <div className="text-xs text-gray-400">Relevance</div>
+            </div>
           </div>
 
           {signal.evidence_urls?.length ? (

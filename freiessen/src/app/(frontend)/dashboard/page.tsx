@@ -9,6 +9,20 @@ export default async function DashboardPage() {
   let competitors: any[] = []
   let loadError: string | null = null
 
+  const useCasesRes = await payload.find({
+    collection: 'use-cases',
+    limit: 50,
+    overrideAccess: true,
+  })
+
+  const useCases = useCasesRes.docs.map((u: any) => ({
+    id: u.key, // mapping Payload key -> UI id
+    label: u.label,
+    icon: u.icon,
+    description: u.description,
+    types: (u.types ?? []).map((t: any) => t.type),
+  }))
+
   try {
     const [signalsRes, competitorsRes] = await Promise.all([
       payload.find({ collection: 'signals', limit: 100 }),
@@ -28,6 +42,7 @@ export default async function DashboardPage() {
       signals={signals}
       competitors={competitors.map((c: any) => ({ id: c.id, name: c.name }))}
       loadError={loadError}
+      useCases={useCases}
     />
   )
 }
