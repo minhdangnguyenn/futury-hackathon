@@ -49,6 +49,8 @@ def init_db():
                 source_type VARCHAR,
                 source_name VARCHAR,
                 raw_text TEXT,
+                url TEXT,
+                published_at TIMESTAMP WITH TIME ZONE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -86,11 +88,10 @@ def save_to_db(signals):
     conn = get_db_connection()
     try:
         insert_query = """
-            INSERT INTO market_signals (signal_id, source_type, source_name, raw_text, published_at)
+            INSERT INTO market_signals (signal_id, source_type, source_name, raw_text, published_at, url)
             VALUES %s
             ON CONFLICT (signal_id) DO NOTHING;
         """
-        # Added s['published_at'] to the tuple
         values = [
             (
                 s["signal_id"],
@@ -98,6 +99,7 @@ def save_to_db(signals):
                 s["source_name"],
                 s["raw_text"],
                 s["published_at"],
+                s["url"],
             )
             for s in signals
         ]
@@ -149,6 +151,10 @@ def execute_reddit_strategy(source_name, url, source_type):
             else:
                 published_at = datetime.now(timezone.utc)
 
+            # Extract Reddit permalink
+            permalink = data.get("permalink", "")
+            post_url = f"https://www.reddit.com{permalink}" if permalink else url
+
             # Dynamic sub-request for comments
             comments_url = (
                 f"https://www.reddit.com/r/{subreddit}/comments/{post_id}.json?limit=3"
@@ -163,13 +169,15 @@ def execute_reddit_strategy(source_name, url, source_type):
                 comments = "No comments."
 
             full_context = f"DATE: {published_at.strftime('%Y-%m-%d')}\nTITLE: {title}\nPOST: {body}\nTOP COMMENTS: {comments}"
+
             signals.append(
                 {
                     "signal_id": f"reddit_{post_id}",
                     "source_type": source_type,
                     "source_name": source_name,
                     "raw_text": clean_text(full_context),
-                    "published_at": published_at,  # <--- New field
+                    "published_at": published_at,
+                    "url": post_url,
                 }
             )
 
@@ -198,6 +206,8 @@ def execute_rss_strategy(source_name, url, source_type):
             else:
                 published_at = datetime.now(timezone.utc)
 
+            article_url = entry.link
+
             full_context = f"DATE: {published_at.strftime('%Y-%m-%d')}\nTITLE: {entry.title}\nCONTENT: {article_text}"
 
             signals.append(
@@ -206,7 +216,8 @@ def execute_rss_strategy(source_name, url, source_type):
                     "source_type": source_type,
                     "source_name": source_name,
                     "raw_text": clean_text(full_context),
-                    "published_at": published_at,  # <--- New field
+                    "published_at": published_at,
+                    "url": article_url,
                 }
             )
 
