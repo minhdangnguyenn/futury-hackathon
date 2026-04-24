@@ -44,76 +44,117 @@ A registry of tracked companies. Used to associate incoming signals with known p
 
 ---
 
-## Trend Metrics (Meaning + Calculation)
+A hackathon prototype for Viega product managers. It continuously collects market signals from public sources, scores them, and surfaces actionable recommendations — so the team can decide what to **Build**, **Invest in**, or **Ignore**.
 
-Every signal includes `trend_metrics` on a **0–100** scale:
+---
 
-- **Momentum** — “Is attention growing right now?”
-- **Impact** — “How big could the market/business effect be?”
-- **Novelty** — “How new vs. what we’ve already seen?”
-- **Confidence** — “How trustworthy is the signal & its evidence?”
+## Idea
 
-### Momentum (0–100)
+Product managers are flooded with noise: forum threads, patents, competitor launches, regulatory changes. This tool cuts through it by:
 
-**Meaning:** how fast this signal/topic is accelerating.
+1. Pulling raw signals from HackerNews, Reddit (r/HACV, r/plumbing), and simulated news/patent feeds
+2. Scoring each signal on **freshness**, **evidence quality**, and **relevance**
+3. Mapping signals to product use cases and surfacing a clear recommendation
 
-**How we calculate it (prototype):**
+---
 
-- **Recency-weighted** score (newer signals score higher)
-- **Engagement boosts** if available (e.g., upvotes/comments from sources)
-- **Repeat mentions** boost if similar signals appear across multiple sources
+## Stack
 
-> In the hackathon prototype, many seed signals come with a preset momentum value.
+- **Next.js 16** (App Router) — frontend + API routes
+- **PayloadCMS 3** — content management and database ORM
+- **PostgreSQL** — persistent storage for signals and competitors
+- **Tailwind CSS** — styling
 
-### Impact (0–100)
+---
 
-**Meaning:** potential magnitude of consequences for product strategy.
+## Data Model
 
-**What increases impact:**
+### Signals
 
-- Regulatory changes / mandates / compliance deadlines
-- Competitor launches with meaningful capability improvements
-- Strong customer pain points (install time, failure rates, corrosion, leakage)
-- Large adoption shifts (e.g., heat pump penetration driving component demand)
+The core entity. Each signal represents a market event detected from a source.
 
-**How we calculate it (prototype):**
+| Field               | Description                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `signal_type`       | `trend`, `weak_signal`, `disruption`, `emerging_tech`, `regulatory`, `market_shift` |
+| `source`            | Where it came from (`hackernews`, `reddit`, `simulated_news`, etc.)                 |
+| `title` / `summary` | What happened                                                                       |
+| `entities`          | Companies, technologies, or topics mentioned                                        |
+| `evidence_urls`     | Links to source material                                                            |
+| `metrics`           | Scores (0–100) for `freshness`, `evidenceQuality`, `relevance`                      |
 
-- Baseline by `signal_type` (e.g., `regulatory` and `disruption` tend to start higher)
-- Keyword/entity boosts (e.g., “mandate”, “launch”, “patent”, “adoption”, “deadline”)
-- Clamped to 0–100
+### Competitors
 
-> In the hackathon prototype, many seed signals come with a preset impact value.
+A registry of tracked companies. Used to associate incoming signals with known players in the market.
 
-### Novelty (0–100)
+---
 
-**Meaning:** how different the signal is from existing signals.
+## Signal Metrics (Meaning + Calculation)
 
-**How we calculate it (prototype):**
+Every signal can be evaluated on a **0–100** scale across three metrics:
 
-- Compare the signal’s **entities + keywords** to previously stored signals
-- High overlap → lower novelty; new entities/phrasing → higher novelty
-- Clamped to 0–100
+- **Freshness** — “How recent is this signal?”
+- **Evidence Quality** — “How credible / well-supported is it?”
+- **Relevance** — “How relevant is it to our competitors, keywords, and active use case?”
 
-> In the hackathon prototype, many seed signals come with a preset novelty value.
+> Implementation lives in `src/lib/signals/scoring.ts` (`getFreshness`, `getEvidenceQuality`, `getRelevance`, `getMetrics`).
 
-### Confidence (0–100)
+---
 
-**Meaning:** how credible we think the signal is.
+### Freshness (0–100)
 
-**What increases confidence:**
-
-- High-quality sources (official releases, regulatory sites, patents)
-- Multiple evidence URLs
-- Specificity (dates, numbers, named organizations)
+**Meaning:** how recent the signal is.
 
 **How we calculate it (prototype):**
 
-- Baseline by source type (e.g., patents/regulations higher than forum posts)
-- - points per evidence URL (capped)
-- - penalties for missing evidence or overly vague summaries
-- Clamped to 0–100
+- Uses `createdAt` (fallback `publishedAt` if present)
+- Bucketed scoring:
+  - 0–1 day: **100**
+  - 2–7 days: **80**
+  - 8–30 days: **50**
+  - > 30 days: **20**
+- If dates are missing: defaults to **50**
 
-> In the hackathon prototype, many seed signals come with a preset confidence value.
+---
+
+### Evidence Quality (0–100)
+
+**Meaning:** how trustworthy the signal is based on source type and supporting links.
+
+**How we calculate it (prototype):**
+
+- Baseline by source string:
+  - `patent` → higher
+  - `regulat*` → higher
+  - `news` / `press` / `release` → medium-high
+  - `forum` / `social` / `reddit` → lower
+- Evidence bonus: **+5 per evidence URL** (capped at **+20**)
+- Clamped to **0–100**
+
+---
+
+### Relevance (0–100)
+
+**Meaning:** how relevant the signal is to the selected product context.
+
+**How we calculate it (prototype):**
+
+- **+30** if a tracked competitor is mentioned (signal `entities` contains competitor name)
+- Keyword matching in `title` + `summary`:
+  - **+10 per keyword hit**, capped at **+40**
+- **+20** if `signal_type` is included in the active use case’s `types`
+- Clamped to **0–100**
+
+Keywords default to a built-in list (e.g., `valve`, `press fitting`, `hydronic`, `leak`, `corrosion`, `bim`, `district heating`, `heat pump`, `retrofit`), but can be overridden when calling scoring helpers.
+
+---
+
+## Composite Score & Recommendation Logic
+
+We combine the three metrics into a single score:
+
+````txt
+score = round( (freshness + evidenceQuality + relevance) / 3 )
+
 
 ---
 
@@ -127,7 +168,7 @@ score = round( (momentum + impact + novelty + confidence) / 4 )
 
 Each signal gets a composite score:
 
-```
+````
 
 score = avg(momentum, impact, novelty, confidence)
 
