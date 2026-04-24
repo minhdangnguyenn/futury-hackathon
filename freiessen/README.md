@@ -44,13 +44,94 @@ A registry of tracked companies. Used to associate incoming signals with known p
 
 ---
 
+## Trend Metrics (Meaning + Calculation)
+
+Every signal includes `trend_metrics` on a **0–100** scale:
+
+- **Momentum** — “Is attention growing right now?”
+- **Impact** — “How big could the market/business effect be?”
+- **Novelty** — “How new vs. what we’ve already seen?”
+- **Confidence** — “How trustworthy is the signal & its evidence?”
+
+### Momentum (0–100)
+
+**Meaning:** how fast this signal/topic is accelerating.
+
+**How we calculate it (prototype):**
+
+- **Recency-weighted** score (newer signals score higher)
+- **Engagement boosts** if available (e.g., upvotes/comments from sources)
+- **Repeat mentions** boost if similar signals appear across multiple sources
+
+> In the hackathon prototype, many seed signals come with a preset momentum value.
+
+### Impact (0–100)
+
+**Meaning:** potential magnitude of consequences for product strategy.
+
+**What increases impact:**
+
+- Regulatory changes / mandates / compliance deadlines
+- Competitor launches with meaningful capability improvements
+- Strong customer pain points (install time, failure rates, corrosion, leakage)
+- Large adoption shifts (e.g., heat pump penetration driving component demand)
+
+**How we calculate it (prototype):**
+
+- Baseline by `signal_type` (e.g., `regulatory` and `disruption` tend to start higher)
+- Keyword/entity boosts (e.g., “mandate”, “launch”, “patent”, “adoption”, “deadline”)
+- Clamped to 0–100
+
+> In the hackathon prototype, many seed signals come with a preset impact value.
+
+### Novelty (0–100)
+
+**Meaning:** how different the signal is from existing signals.
+
+**How we calculate it (prototype):**
+
+- Compare the signal’s **entities + keywords** to previously stored signals
+- High overlap → lower novelty; new entities/phrasing → higher novelty
+- Clamped to 0–100
+
+> In the hackathon prototype, many seed signals come with a preset novelty value.
+
+### Confidence (0–100)
+
+**Meaning:** how credible we think the signal is.
+
+**What increases confidence:**
+
+- High-quality sources (official releases, regulatory sites, patents)
+- Multiple evidence URLs
+- Specificity (dates, numbers, named organizations)
+
+**How we calculate it (prototype):**
+
+- Baseline by source type (e.g., patents/regulations higher than forum posts)
+- - points per evidence URL (capped)
+- - penalties for missing evidence or overly vague summaries
+- Clamped to 0–100
+
+> In the hackathon prototype, many seed signals come with a preset confidence value.
+
+---
+
+## Composite Score & Recommendation Logic
+
+We combine the four metrics into a single score:
+
+```txt
+score = round( (momentum + impact + novelty + confidence) / 4 )
 ## Scoring & Recommendations
 
 Each signal gets a composite score:
 
 ```
+
 score = avg(momentum, impact, novelty, confidence)
-```
+
+````
 
 | Score | Recommendation                             |
 | ----- | ------------------------------------------ |
@@ -92,7 +173,7 @@ bun seed:competitors
 
 # Seed signals (simulated news, patents, forum posts)
 bun seed:signals
-```
+````
 
 ---
 

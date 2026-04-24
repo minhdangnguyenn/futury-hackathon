@@ -25,6 +25,18 @@ const Signals: CollectionConfig = {
       ],
     },
     {
+      name: 'company',
+      label: 'Primary Company',
+      type: 'relationship',
+      relationTo: 'competitors',
+      hasMany: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Primary competitor/company this signal is about (used for detail pages).',
+      },
+    },
+    // Existing: many competitors (optional)
+    {
       name: 'competitors',
       label: 'Competitors',
       type: 'relationship',
@@ -34,6 +46,7 @@ const Signals: CollectionConfig = {
         position: 'sidebar',
       },
     },
+
     {
       name: 'source',
       label: 'Source',
@@ -100,34 +113,10 @@ const Signals: CollectionConfig = {
       label: 'Trend Metrics',
       type: 'group',
       fields: [
-        {
-          name: 'momentum',
-          label: 'Momentum (0–100)',
-          type: 'number',
-          min: 0,
-          max: 100,
-        },
-        {
-          name: 'novelty',
-          label: 'Novelty (0–100)',
-          type: 'number',
-          min: 0,
-          max: 100,
-        },
-        {
-          name: 'impact',
-          label: 'Impact (0–100)',
-          type: 'number',
-          min: 0,
-          max: 100,
-        },
-        {
-          name: 'confidence',
-          label: 'Confidence (0–100)',
-          type: 'number',
-          min: 0,
-          max: 100,
-        },
+        { name: 'momentum', label: 'Momentum (0–100)', type: 'number', min: 0, max: 100 },
+        { name: 'novelty', label: 'Novelty (0–100)', type: 'number', min: 0, max: 100 },
+        { name: 'impact', label: 'Impact (0–100)', type: 'number', min: 0, max: 100 },
+        { name: 'confidence', label: 'Confidence (0–100)', type: 'number', min: 0, max: 100 },
       ],
     },
   ],
