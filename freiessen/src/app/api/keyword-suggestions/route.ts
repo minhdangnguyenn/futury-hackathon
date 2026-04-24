@@ -1,42 +1,55 @@
 import { NextResponse } from 'next/server'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 
-/**
- * Very simple suggestion source:
- * - a fixed vocabulary (fast, no DB needed)
- * - plus basic filtering
- *
- * You can later replace this with DB-based suggestions
- * (e.g. last 100 signal titles, categories, etc.)
- */
-const VOCAB = [
+const STATIC_KEYWORDS = [
   'heat pump',
-  'hvac',
-  'valve',
+  'hydraulic balancing',
   'press fitting',
-  'press connect',
   'pipe corrosion',
-  'lead-free solder',
-  'copper pipe',
-  'drinking water',
-  'data center cooling',
-  'modular data center',
-  'smart building',
   'leak detection',
-  'IoT sensor',
-  'installer labor shortage',
-  'installation time reduction',
-  'Geberit',
-  'Uponor',
-  'Viega',
+  'district heating',
+  'BIM',
+  'Revit',
+  'lead-free solder',
+  'smart building',
 ]
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const query = (searchParams.get('query') ?? '').trim().toLowerCase()
+  const q = String(searchParams.get('query') ?? '').trim()
 
-  if (!query) return NextResponse.json({ suggestions: [] })
+  if (!q) return NextResponse.json({ suggestions: [] })
 
-  const suggestions = VOCAB.filter((k) => k.toLowerCase().includes(query)).slice(0, 8)
+  const query = q.toLowerCase()
+  const suggestions = new Set<string>()
 
-  return NextResponse.json({ suggestions })
+  // 1) Static suggestions
+  for (const k of STATIC_KEYWORDS) {
+    if (k.toLowerCase().includes(query)) suggestions.add(k)
+  }
+
+  // 2) Competitor name suggestions
+  try {
+    const payload = await getPayload({ config })
+
+    const competitorsRes = await payload.find({
+      collection: 'competitors',
+      limit: 50,
+      where: {
+        name: { contains: q }, // Payload "contains"
+      },
+    })
+
+    for (const c of competitorsRes.docs as any[]) {
+      if (c?.name) suggestions.add(String(c.name))
+    }
+  } catch (e) {
+    // Don’t fail suggestions if DB is down
+    // (optional) console.error(e)
+  }
+
+  return NextResponse.json({
+    suggestions: Array.from(suggestions).slice(0, 12),
+  })
 }
