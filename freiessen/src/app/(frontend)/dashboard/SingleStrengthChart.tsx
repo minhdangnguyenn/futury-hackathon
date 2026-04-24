@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Signal } from '@/lib/signals/types'
 import { getScore } from '@/lib/signals/scoring'

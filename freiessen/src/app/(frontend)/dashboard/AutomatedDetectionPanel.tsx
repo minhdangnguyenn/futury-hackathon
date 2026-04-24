@@ -1,6 +1,5 @@
 'use client'
 
-import React, { useState } from 'react'
 import { DetectSignalsPanel } from './DetectSignalPanel'
 
 export function AutomatedDetectionPanel({

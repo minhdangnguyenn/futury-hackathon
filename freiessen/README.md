@@ -26,18 +26,20 @@ Product managers are flooded with noise: forum threads, patents, competitor laun
 ## Data Model
 
 ### Signals
+
 The core entity. Each signal represents a market event detected from a source.
 
-| Field | Description |
-|---|---|
-| `signal_type` | `trend`, `weak_signal`, `disruption`, `emerging_tech`, `regulatory`, `market_shift` |
-| `source` | Where it came from (`hackernews`, `reddit`, `simulated_news`, etc.) |
-| `title` / `summary` | What happened |
-| `entities` | Companies, technologies, or topics mentioned |
-| `evidence_urls` | Links to source material |
-| `trend_metrics` | Scores (0–100) for momentum, impact, novelty, confidence |
+| Field               | Description                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `signal_type`       | `trend`, `weak_signal`, `disruption`, `emerging_tech`, `regulatory`, `market_shift` |
+| `source`            | Where it came from (`hackernews`, `reddit`, `simulated_news`, etc.)                 |
+| `title` / `summary` | What happened                                                                       |
+| `entities`          | Companies, technologies, or topics mentioned                                        |
+| `evidence_urls`     | Links to source material                                                            |
+| `trend_metrics`     | Scores (0–100) for momentum, impact, novelty, confidence                            |
 
 ### Competitors
+
 A registry of tracked companies. Used to associate incoming signals with known players in the market.
 
 ---
@@ -50,11 +52,11 @@ Each signal gets a composite score:
 score = avg(momentum, impact, novelty, confidence)
 ```
 
-| Score | Recommendation |
-|---|---|
-| ≥ 75 | 🟢 **Build** — high priority, act now |
-| 55–74 | 🟡 **Invest** — worth monitoring |
-| < 55 | 🔴 **Ignore** — low signal, not actionable |
+| Score | Recommendation                             |
+| ----- | ------------------------------------------ |
+| ≥ 75  | 🟢 **Build** — high priority, act now      |
+| 55–74 | 🟡 **Invest** — worth monitoring           |
+| < 55  | 🔴 **Ignore** — low signal, not actionable |
 
 ---
 
@@ -75,10 +77,10 @@ The dashboard at `/dashboard` is the main interface:
 
 ## API Routes
 
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/detect-signals` | `POST` | Crawl sources and store new signals. Body: `{ mode: 'all' }` or `{ mode: 'keyword', keyword: string }` |
-| `/api/keyword-suggestions` | `GET` | Autocomplete suggestions for keyword search. Query: `?query=...` |
+| Route                      | Method | Purpose                                                                                                |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `/api/detect-signals`      | `POST` | Crawl sources and store new signals. Body: `{ mode: 'all' }` or `{ mode: 'keyword', keyword: string }` |
+| `/api/keyword-suggestions` | `GET`  | Autocomplete suggestions for keyword search. Query: `?query=...`                                       |
 
 ---
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDebouncedValue } from '@/app/(frontend)/hooks/useDebouncedValue'
 
 type DetectSignalsPanelProps = {

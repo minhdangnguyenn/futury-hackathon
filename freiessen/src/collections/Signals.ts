@@ -25,6 +25,16 @@ const Signals: CollectionConfig = {
       ],
     },
     {
+      name: 'competitors',
+      label: 'Competitors',
+      type: 'relationship',
+      relationTo: 'competitors',
+      hasMany: true,
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'source',
       label: 'Source',
       type: 'text',

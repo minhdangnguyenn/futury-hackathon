@@ -227,6 +227,7 @@ export interface Competitor {
 export interface Signal {
   id: number;
   signal_type: 'trend' | 'weak_signal' | 'disruption' | 'emerging_tech' | 'regulatory' | 'market_shift';
+  competitors?: (number | Competitor)[] | null;
   source: string;
   title: string;
   summary: string;
@@ -418,6 +419,7 @@ export interface CompetitorsSelect<T extends boolean = true> {
  */
 export interface SignalsSelect<T extends boolean = true> {
   signal_type?: T;
+  competitors?: T;
   source?: T;
   title?: T;
   summary?: T;

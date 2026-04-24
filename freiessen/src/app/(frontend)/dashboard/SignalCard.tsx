@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import type { Signal } from '@/lib/signals/types'
 import { getRecommendation } from '@/lib/signals/scoring'
 import { ScoreBar } from './ScoreBar'

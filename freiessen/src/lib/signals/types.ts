@@ -12,6 +12,7 @@ export type Signal = {
   }
   entities?: { name: string }[]
   evidence_urls?: { url: string; label?: string }[]
+  competitors?: Array<string | { id: string; name?: string }>
 }
 
 export type UseCase = {

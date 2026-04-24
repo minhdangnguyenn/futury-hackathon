@@ -10,6 +10,7 @@ import { RecommendationSummary } from './RecommendationSummary'
 import { SignalStrengthChart } from './SingleStrengthChart'
 import { SignalList } from './SignalList'
 import { AutomatedDetectionPanel } from './AutomatedDetectionPanel'
+import { CompetitorSignalsChart } from './CompetitorSignalsChart'
 
 export const USE_CASES: UseCase[] = [
   {
@@ -37,9 +38,11 @@ export const USE_CASES: UseCase[] = [
 
 export default function DashboardClient({
   signals,
+  competitors,
   loadError,
 }: {
   signals: Signal[]
+  competitors: { id: string; name: string }[]
   loadError?: string | null
 }) {
   const [detectWarning, setDetectWarning] = useState<string | null>(null)
@@ -141,7 +144,6 @@ export default function DashboardClient({
           setKeyword={setKeyword}
           runDetection={runDetection}
         />
-
         <UseCaseTabs
           useCases={USE_CASES}
           activeId={activeUC}
@@ -151,7 +153,6 @@ export default function DashboardClient({
             setExpandedId(null)
           }}
         />
-
         <RecommendationSummary
           buildCount={buildCount}
           investCount={investCount}
@@ -159,8 +160,8 @@ export default function DashboardClient({
           activeFilter={activeFilter}
           onToggle={(id) => setActiveFilter(activeFilter === id ? 'all' : id)}
         />
-
         <SignalStrengthChart signals={byUC} />
+        <CompetitorSignalsChart signals={byUC} competitors={competitors} />
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-800">
@@ -183,7 +184,6 @@ export default function DashboardClient({
             ))}
           </div>
         </div>
-
         <SignalList signals={filtered} expandedId={expandedId} setExpandedId={setExpandedId} />
       </div>
     </div>
