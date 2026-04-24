@@ -14,6 +14,10 @@ function getRecommendationId(metrics: SignalMetrics): 'build' | 'invest' | 'igno
   return 'ignore'
 }
 
+function getSignalId(signal: Signal) {
+  return String((signal as any).id ?? (signal as any)._id ?? '')
+}
+
 export default function CompetitorDetailClient({
   competitor,
   signals,
@@ -30,7 +34,10 @@ export default function CompetitorDetailClient({
   // ✅ Build metrics once and reuse everywhere
   const metricsById = useMemo(() => {
     const map = new Map<string, SignalMetrics>()
-    for (const s of signals) map.set(s.id, getMetrics(s))
+    for (const s of signals) {
+      const id = getSignalId(s)
+      if (id) map.set(id, getMetrics(s))
+    }
     return map
   }, [signals])
 

@@ -4,6 +4,10 @@ import type { Signal } from '@/lib/signals/types'
 import type { SignalMetrics } from '@/lib/signals/scoring'
 import { SignalCard } from './SignalCard'
 
+function getSignalId(signal: Signal) {
+  return String((signal as any).id ?? (signal as any)._id ?? '')
+}
+
 export function SignalList({
   signals,
   expandedId,
@@ -18,7 +22,7 @@ export function SignalList({
   return (
     <div className="space-y-4">
       {signals.map((signal) => {
-        const id = String((signal as any).id)
+        const id = getSignalId(signal)
         const metrics = metricsById?.get(id)
 
         return (
