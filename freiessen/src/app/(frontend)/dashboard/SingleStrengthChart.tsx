@@ -15,11 +15,8 @@ export function SignalStrengthChart({
   metricsById: Map<string, SignalMetrics>
   metric?: MetricKey
 }) {
-  // ✅ local selection, seeded from prop (or default to relevance)
+  // local selection, seeded from prop (or default to relevance)
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>(metric ?? 'relevance')
-
-  // If the parent changes `metric` prop later and you want to sync it,
-  // we can add an effect — but keeping it simple is usually fine.
 
   const rows = useMemo(() => {
     return signals.map((s) => {
@@ -56,7 +53,7 @@ export function SignalStrengthChart({
           </p>
         </div>
 
-        {/* ✅ Dropdown */}
+        {/* Dropdown */}
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600" htmlFor="metricSelect">
             Metric
@@ -74,7 +71,7 @@ export function SignalStrengthChart({
         </div>
       </div>
 
-      {/* Example “bar list” chart (simple, no external chart lib) */}
+      {/* Bar list chart */}
       <div className="mt-4 space-y-2">
         {rows.slice(0, 12).map((r) => (
           <div key={r.id} className="flex items-center gap-3">
@@ -83,8 +80,9 @@ export function SignalStrengthChart({
             </div>
 
             <div className="flex-1 bg-gray-100 rounded h-2 overflow-hidden">
+              {/* ✅ yellow bars (instead of black) */}
               <div
-                className="h-2 bg-gray-900"
+                className="h-2 bg-yellow-400"
                 style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }}
               />
             </div>
