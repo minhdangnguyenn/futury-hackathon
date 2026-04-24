@@ -11,19 +11,27 @@ import { SignalList } from './SignalList'
 import { AutomatedDetectionPanel } from './AutomatedDetectionPanel'
 import { CompetitorSignalsChart } from './CompetitorSignalsChart'
 import { ChatbotWidget } from './ChatbotWidget'
+import { EnergyTrendChart } from './EnergeTrendChart'
 
 type CompetitorWithToken = { id: string; name: string; token: string }
+type PricePoint = { date: string; price: number }
 
 export default function DashboardClient({
   signals: initialSignals,
   competitors,
   useCases,
   loadError,
+
+  // keep these props (optional). We will fall back to them if present.
+  oilPrices = [],
+  gasPrices = [],
 }: {
   signals: Signal[]
   competitors: CompetitorWithToken[]
   useCases: UseCase[]
   loadError?: string | null
+  oilPrices?: PricePoint[]
+  gasPrices?: PricePoint[]
 }) {
   const router = useRouter()
 
@@ -37,10 +45,57 @@ export default function DashboardClient({
   const [activeUC, setActiveUC] = useState<string>('') // set after useCases load
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  // ✅ energy state fetched from API (so DashboardPage can remain unchanged)
+  const [energyLoading, setEnergyLoading] = useState(false)
+  const [energyError, setEnergyError] = useState<string | null>(null)
+  const [energyOil, setEnergyOil] = useState<PricePoint[]>([])
+  const [energyGas, setEnergyGas] = useState<PricePoint[]>([])
+
   useEffect(() => {
     if (!useCases?.length) return
     setActiveUC((prev) => (prev && useCases.some((u) => u.id === prev) ? prev : useCases[0].id))
   }, [useCases])
+
+  // Fetch energy prices once
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadEnergy() {
+      setEnergyLoading(true)
+      setEnergyError(null)
+      try {
+        const res = await fetch('/api/energy-prices', { method: 'GET' })
+        const data = await res.json().catch(() => ({}) as any)
+        if (!res.ok) throw new Error(data?.error ?? `Energy fetch failed (HTTP ${res.status})`)
+
+        const oil = Array.isArray(data?.oil) ? data.oil : []
+        const gas = Array.isArray(data?.gas) ? data.gas : []
+
+        const normOil = oil
+          .map((p: any) => ({ date: String(p.date), price: Number(p.price) }))
+          .filter((p: any) => p.date && Number.isFinite(p.price))
+
+        const normGas = gas
+          .map((p: any) => ({ date: String(p.date), price: Number(p.price) }))
+          .filter((p: any) => p.date && Number.isFinite(p.price))
+
+        if (!cancelled) {
+          setEnergyOil(normOil)
+          setEnergyGas(normGas)
+        }
+      } catch (e) {
+        if (!cancelled)
+          setEnergyError(e instanceof Error ? e.message : 'Failed to load energy prices')
+      } finally {
+        if (!cancelled) setEnergyLoading(false)
+      }
+    }
+
+    loadEnergy()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const uc = useMemo(() => {
     if (!useCases?.length) {
@@ -115,6 +170,21 @@ export default function DashboardClient({
     }
   }
 
+  // ✅ Choose API-fetched energy first; fall back to props if you later pass them
+  const chartOilPoints = useMemo<PricePoint[]>(() => {
+    const source = energyOil.length ? energyOil : oilPrices
+    return (source ?? [])
+      .map((p: any) => ({ date: String(p.date), price: Number(p.price) }))
+      .filter((p) => p.date && Number.isFinite(p.price))
+  }, [energyOil, oilPrices])
+
+  const chartGasPoints = useMemo<PricePoint[]>(() => {
+    const source = energyGas.length ? energyGas : gasPrices
+    return (source ?? [])
+      .map((p: any) => ({ date: String(p.date), price: Number(p.price) }))
+      .filter((p) => p.date && Number.isFinite(p.price))
+  }, [energyGas, gasPrices])
+
   const chatContext = useMemo(() => {
     const topSignals = byUC.slice(0, 10).map((s) => {
       const id = String((s as any).id ?? '')
@@ -143,9 +213,15 @@ export default function DashboardClient({
         useCases: useCases.length,
       },
       topSignals,
+      energy: {
+        oilPoints: chartOilPoints.slice(-12),
+        gasPoints: chartGasPoints.slice(-12),
+      },
     }
   }, [
     byUC,
+    chartGasPoints,
+    chartOilPoints,
     competitors.length,
     derivedDetectedCount,
     expandedId,
@@ -205,9 +281,22 @@ export default function DashboardClient({
           }}
         />
 
+        {/* ✅ Energy price trend charts (Oil + Gas) */}
+        <div className="mb-2 text-xs text-gray-400">
+          {energyLoading
+            ? 'Loading energy prices...'
+            : energyError
+              ? `Energy prices error: ${energyError}`
+              : `Oil points: ${chartOilPoints.length} · Gas points: ${chartGasPoints.length}`}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+          <EnergyTrendChart title="Oil price trend" points={chartOilPoints} />
+          <EnergyTrendChart title="Gas price trend" points={chartGasPoints} />
+        </div>
+
         <SignalStrengthChart signals={byUC} metricsById={metricsById} metric="relevance" />
 
-        {/* ✅ now competitors includes token */}
         <CompetitorSignalsChart signals={byUC} competitors={competitors} />
 
         <div className="flex items-center justify-between mb-4">
