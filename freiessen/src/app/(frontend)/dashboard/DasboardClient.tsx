@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Signal } from '@/lib/signals/types'
 import type { UseCase } from '@/lib/signals/constants'
 import { RECOMMENDATION_FILTERS } from '@/lib/signals/constants'
@@ -45,6 +46,8 @@ export default function DashboardClient({
   competitors: { id: string; name: string }[]
   loadError?: string | null
 }) {
+  const router = useRouter()
+
   const [detectWarning, setDetectWarning] = useState<string | null>(null)
   const [activeUC, setActiveUC] = useState<string>('uc1')
   const [activeFilter, setActiveFilter] = useState<string>('all')
@@ -84,7 +87,8 @@ export default function DashboardClient({
       setDetectedCount(data.detected ?? 0)
       setLastDetected(new Date().toLocaleTimeString())
 
-      window.location.reload()
+      // Option A: refresh server data without resetting client state
+      router.refresh()
     } catch (e) {
       setDetectError(e instanceof Error ? e.message : 'Detection failed.')
     } finally {
@@ -131,11 +135,24 @@ export default function DashboardClient({
       </div>
 
       <div className="p-6 max-w-6xl mx-auto">
+        {loadError && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 mb-4 text-sm">
+            {loadError}
+          </div>
+        )}
+
+        {detectError && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 mb-4 text-sm">
+            {detectError}
+          </div>
+        )}
+
         {detectWarning && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-3 mb-4 text-sm">
             {detectWarning}
           </div>
         )}
+
         <AutomatedDetectionPanel
           detecting={detecting}
           lastDetected={lastDetected}
@@ -144,6 +161,7 @@ export default function DashboardClient({
           setKeyword={setKeyword}
           runDetection={runDetection}
         />
+
         <UseCaseTabs
           useCases={USE_CASES}
           activeId={activeUC}
@@ -153,6 +171,7 @@ export default function DashboardClient({
             setExpandedId(null)
           }}
         />
+
         <RecommendationSummary
           buildCount={buildCount}
           investCount={investCount}
@@ -160,6 +179,7 @@ export default function DashboardClient({
           activeFilter={activeFilter}
           onToggle={(id) => setActiveFilter(activeFilter === id ? 'all' : id)}
         />
+
         <SignalStrengthChart signals={byUC} />
         <CompetitorSignalsChart signals={byUC} competitors={competitors} />
 
@@ -184,6 +204,7 @@ export default function DashboardClient({
             ))}
           </div>
         </div>
+
         <SignalList signals={filtered} expandedId={expandedId} setExpandedId={setExpandedId} />
       </div>
     </div>

@@ -64,6 +64,7 @@ const CATEGORIES = [
 
 // ── Helpers ────────────────────────────────────────────────────────
 function toHNQuery(keyword: string) {
+  // "lead free solder" -> "lead+free+solder"
   return keyword.trim().split(/\s+/g).filter(Boolean).join('+')
 }
 
@@ -144,6 +145,8 @@ export async function POST(req: Request) {
   if (mode === 'keyword') {
     const label = `Keyword: ${keyword}`
     const hnQuery = toHNQuery(keyword)
+
+    // pick a sensible subreddit set for generic keyword searches
     const subreddit = 'HVAC+plumbing+Plumbing+homeautomation+smarthome+construction+sysadmin'
 
     jobs.push(
@@ -153,6 +156,7 @@ export async function POST(req: Request) {
       ]).then(([hn, reddit]) => ({ category: label, signals: [...hn, ...reddit] })),
     )
   } else {
+    // mode === 'all'
     for (const cat of CATEGORIES) {
       jobs.push(
         Promise.all([
@@ -167,7 +171,7 @@ export async function POST(req: Request) {
   const results = await Promise.all(jobs)
   const allSignals = results.flatMap((r) => r.signals)
 
-  // 3) Insert (robustly)
+  // 3) Save into Payload + count results
   let inserted = 0
   let failed = 0
   const errors: Array<{ title?: string; reason: string }> = []
@@ -197,20 +201,20 @@ export async function POST(req: Request) {
         reason: cause?.message ?? err?.message ?? 'Insert failed',
       })
 
-      // ✅ continue inserting others
-      continue
+      // continue
     }
   }
 
+  // 4) Return summary to frontend
   return NextResponse.json({
     success: true,
     mode,
     keyword: mode === 'keyword' ? keyword : null,
-    fetched: allSignals.length,
-    detected: inserted,
-    failed,
+    fetched: allSignals.length, // ✅ how many rows fetched from sources
+    inserted, // ✅ how many saved successfully
+    failed, // ✅ how many failed to save
     categories: results.map((r) => ({ category: r.category, count: r.signals.length })),
-    errors: errors.slice(0, 10), // don’t spam response
+    errors: errors.slice(0, 10), // optional debug
     fetchedAt: new Date().toISOString(),
   })
 }
