@@ -5,12 +5,9 @@ from typing import Iterable, List
 import google.generativeai as genai
 
 from agents.personas import PersonaAgent
-from config import GOOGLE_API_KEY, MAX_DEBATE_ROUNDS, MODEL_NAME, PERSONAS
+from config import MAX_DEBATE_ROUNDS, MODEL_NAME, PERSONAS, require_google_api_key
 from models.signal import DebateArgument, DebateResult, MarketSignal
 from utils.display import Display
-
-
-genai.configure(api_key=GOOGLE_API_KEY)
 
 
 SYNTHESIS_PROMPT = """
@@ -31,6 +28,7 @@ class DebateEngine:
         max_rounds: int = MAX_DEBATE_ROUNDS,
         display: Display | None = None,
     ):
+        genai.configure(api_key=require_google_api_key())
         self.persona_keys = self._validate_personas(persona_keys)
         self.max_rounds = max(1, max_rounds)
         self.display = display or Display()
@@ -281,13 +279,7 @@ class DebateEngine:
         return re.sub(r"^[-*\d.)\s]+", "", line).strip()
 
     def _serialize_signal(self, signal: MarketSignal) -> dict:
-        return {
-            "title": signal.title,
-            "description": signal.description.strip(),
-            "signal_type": signal.signal_type.value,
-            "source": signal.source,
-            "region": signal.region,
-        }
+        return signal.to_dict()
 
     def _serialize_argument(self, argument: DebateArgument) -> dict:
         return {

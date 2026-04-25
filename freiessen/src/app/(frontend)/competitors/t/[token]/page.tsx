@@ -4,6 +4,8 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import CompetitorDetailClient from './CompetitosDetailClient'
 
+export const dynamic = 'force-dynamic'
+
 type CompetitorTokenPageProps = {
   params: Promise<{
     token?: string

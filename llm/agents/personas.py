@@ -1,8 +1,6 @@
 import google.generativeai as genai
-from config import GOOGLE_API_KEY, MODEL_NAME, TEMPERATURE, PERSONAS
+from config import MODEL_NAME, TEMPERATURE, PERSONAS, require_google_api_key
 from models.signal import MarketSignal, DebateArgument
-
-genai.configure(api_key=GOOGLE_API_KEY)
 
 
 PERSONA_SYSTEM_PROMPTS = {
@@ -156,6 +154,7 @@ Keep arguments to 4-6 sentences.
 
 class PersonaAgent:
     def __init__(self, persona_key: str):
+        genai.configure(api_key=require_google_api_key())
         self.persona_key = persona_key
         self.persona_info = PERSONAS[persona_key]
         self.system_prompt = PERSONA_SYSTEM_PROMPTS[persona_key]

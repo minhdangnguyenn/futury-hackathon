@@ -1,8 +1,11 @@
 import crypto from 'crypto'
 
-const SECRET = process.env.ID_TOKEN_SECRET
-if (!SECRET) {
-  throw new Error('Missing ID_TOKEN_SECRET')
+function getSecret() {
+  const secret = process.env.ID_TOKEN_SECRET
+  if (!secret) {
+    throw new Error('Missing ID_TOKEN_SECRET')
+  }
+  return secret
 }
 
 export type IdTokenPayload = {
@@ -22,11 +25,8 @@ function unb64url(input: string) {
 export function signId(payload: IdTokenPayload) {
   const json = JSON.stringify(payload)
   const body = b64url(json)
-
-  if (!SECRET) {
-    throw new Error('Missing ID_TOKEN_SECRET')
-  }
-  const sig = crypto.createHmac('sha256', SECRET).update(body).digest('base64url')
+  const secret = getSecret()
+  const sig = crypto.createHmac('sha256', secret).update(body).digest('base64url')
   return `${body}.${sig}`
 }
 
@@ -36,10 +36,8 @@ export function verifyId(token: unknown): IdTokenPayload | null {
   const [body, sig] = token.split('.')
   if (!body || !sig) return null
 
-  if (!SECRET) {
-    throw new Error('Missing ID_TOKEN_SECRET')
-  }
-  const expected = crypto.createHmac('sha256', SECRET).update(body).digest('base64url')
+  const secret = getSecret()
+  const expected = crypto.createHmac('sha256', secret).update(body).digest('base64url')
 
   // constant-time compare
   const a = Buffer.from(sig)

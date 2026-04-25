@@ -20,32 +20,13 @@ type ChatbotWidgetProps = {
 }
 
 const DEFAULT_STORAGE_KEY = 'dashboard.chat.messages.v1'
+const DEFAULT_CHAT_API_URL = 'https://backend-pzxsbovuxa-ew.a.run.app/debates/stream/idea'
 
 const welcomeMessage: ChatMessage = {
   id: 'welcome',
   from: 'bot',
-  text: 'Hi there! Ask me anything about the dashboard, signals, or competitors.',
+  text: 'Share an idea and I will test it against the latest 5 dashboard signals with all 5 personas.',
   createdAt: Date.now(),
-}
-
-function generateBotReply(question: string): string {
-  const normalized = question.trim().toLowerCase()
-  if (!normalized) return 'Please type a question and I will try to help.'
-
-  if (normalized.includes('signal')) {
-    return 'I can help you understand the signal list, trends, and relevance scores. Try asking about top signals or freshness.'
-  }
-  if (normalized.includes('competitor')) {
-    return 'Competitor charts show relative signal coverage. You can click a competitor to review their signal performance.'
-  }
-  if (normalized.includes('detect') || normalized.includes('detection')) {
-    return 'Use the detection panel to scan all signals or search by keyword. If you want more recent data, run detection again.'
-  }
-  if (normalized.includes('help') || normalized.includes('how')) {
-    return 'Try asking about the dashboard metrics, use cases, or how to filter and expand signal details.'
-  }
-
-  return 'That is a great question! I am a simple starter bot, but you can expand me later to call an AI service or connect to product help.'
 }
 
 function makeId(prefix: string) {
@@ -75,38 +56,301 @@ function safeParseMessages(raw: string | null): ChatMessage[] | null {
   }
 }
 
+function normalizeApiUrl(rawUrl?: string | null) {
+  const trimmed = rawUrl?.trim()
+  if (!trimmed) return DEFAULT_CHAT_API_URL
+  if (/\/debates\/stream\/idea\/?$/.test(trimmed)) {
+    return trimmed
+  }
+  if (/\/api\/chat\/?$/.test(trimmed)) {
+    return trimmed.replace(/\/api\/chat\/?$/, '/debates/stream/idea')
+  }
+  return `${trimmed.replace(/\/+$/, '')}/debates/stream/idea`
+}
+
+function summarizeContext(context?: ChatContext) {
+  if (!context) return ''
+
+  const lines: string[] = []
+  const activeUseCase = context.activeUseCase
+  if (activeUseCase && typeof activeUseCase === 'object') {
+    const label = (activeUseCase as { label?: unknown }).label
+    if (typeof label === 'string' && label.trim()) {
+      lines.push(`Active use case: ${label.trim()}`)
+    }
+  }
+
+  const keyword = context.keyword
+  if (typeof keyword === 'string' && keyword.trim()) {
+    lines.push(`Current keyword filter: ${keyword.trim()}`)
+  }
+
+  const counts = context.counts
+  if (counts && typeof counts === 'object') {
+    const totalSignals = (counts as { totalSignals?: unknown }).totalSignals
+    const signalsInUseCase = (counts as { signalsInUseCase?: unknown }).signalsInUseCase
+    if (typeof totalSignals === 'number') {
+      lines.push(`Signals tracked: ${totalSignals}`)
+    }
+    if (typeof signalsInUseCase === 'number') {
+      lines.push(`Signals in current use case: ${signalsInUseCase}`)
+    }
+  }
+
+  const topSignals = context.topSignals
+  if (Array.isArray(topSignals)) {
+    const titles = topSignals
+      .slice(0, 3)
+      .map((signal) => {
+        if (!signal || typeof signal !== 'object') return null
+        const title = (signal as { title?: unknown }).title
+        return typeof title === 'string' && title.trim() ? title.trim() : null
+      })
+      .filter((value): value is string => !!value)
+
+    if (titles.length > 0) {
+      lines.push(`Top visible signals: ${titles.join('; ')}`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+function buildIdeaPayload(message: string, context?: ChatContext) {
+  const normalizedMessage = message.trim()
+  const contextSummary = summarizeContext(context)
+  if (!contextSummary) return normalizedMessage
+
+  return [
+    normalizedMessage,
+    'Dashboard context:',
+    contextSummary,
+  ].join('\n\n')
+}
+
+type StreamEvent = {
+  event: string
+  data: Record<string, unknown>
+}
+
+type DebateFinalResult = {
+  recommendation?: string
+  confidence_score?: number
+  reasoning?: string
+  next_actions?: string[]
+  agreements?: string[]
+  conflicts?: string[]
+}
+
+function parseSseBlock(block: string): StreamEvent | null {
+  const lines = block
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+
+  if (lines.length === 0) return null
+
+  let event = 'message'
+  const dataLines: string[] = []
+
+  for (const line of lines) {
+    if (line.startsWith('event:')) {
+      event = line.slice('event:'.length).trim()
+      continue
+    }
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice('data:'.length).trim())
+    }
+  }
+
+  if (dataLines.length === 0) return null
+
+  try {
+    return { event, data: JSON.parse(dataLines.join('\n')) as Record<string, unknown> }
+  } catch {
+    return null
+  }
+}
+
+function formatFinalReply(result: DebateFinalResult | null) {
+  if (!result) {
+    return 'I reviewed the idea, but I did not receive a final debate result. Please try again.'
+  }
+
+  const lines = [
+    `Recommendation: ${result.recommendation ?? 'MONITOR'}`,
+  ]
+
+  if (typeof result.confidence_score === 'number') {
+    lines.push(`Confidence: ${result.confidence_score}/10`)
+  }
+
+  if (result.reasoning) {
+    lines.push('', result.reasoning)
+  }
+
+  if (Array.isArray(result.next_actions) && result.next_actions.length > 0) {
+    lines.push('', 'Next actions:')
+    for (const action of result.next_actions.slice(0, 3)) {
+      lines.push(`- ${action}`)
+    }
+  }
+
+  if (Array.isArray(result.agreements) && result.agreements.length > 0) {
+    lines.push('', `Key agreement: ${result.agreements[0]}`)
+  }
+
+  if (Array.isArray(result.conflicts) && result.conflicts.length > 0) {
+    lines.push(`Key tension: ${result.conflicts[0]}`)
+  }
+
+  return lines.join('\n')
+}
+
+function streamStatusFromEvent(streamEvent: StreamEvent) {
+  const { event, data } = streamEvent
+
+  if (event === 'idea_received') {
+    return 'Reviewing your idea against the latest dashboard signals...'
+  }
+  if (event === 'session_started') {
+    const signals = Array.isArray(data.signals) ? data.signals.length : null
+    return signals ? `Debate started with ${signals} signals in scope.` : 'Debate session started.'
+  }
+  if (event === 'correlation_started') {
+    return 'Finding relationships across the latest signals...'
+  }
+  if (event === 'brief_started') {
+    return 'Preparing the executive brief for the personas...'
+  }
+  if (event === 'persona_started') {
+    const personaName = data.persona_name
+    if (typeof personaName === 'string' && personaName.trim()) {
+      return `${personaName} is responding...`
+    }
+    return 'A persona is responding...'
+  }
+  if (event === 'synthesis_started') {
+    return 'Synthesizing the final recommendation...'
+  }
+
+  return null
+}
+
 async function postChat(options: {
   apiUrl: string
   message: string
   context?: ChatContext
-  conversation: ChatMessage[]
+  apiKey?: string
+  onStatus?: (text: string) => void
 }) {
+  const requestBody = JSON.stringify({
+    idea: buildIdeaPayload(options.message, options.context),
+  })
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  }
+  if (options.apiKey?.trim()) {
+    headers['X-API-Key'] = options.apiKey.trim()
+  }
+
+  console.info('[ChatbotWidget] Calling debate API', {
+    url: options.apiUrl,
+    requestBody,
+  })
+
   const res = await fetch(options.apiUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: options.message,
-      context: options.context ?? {},
-      conversation: options.conversation,
-    }),
+    headers,
+    body: requestBody,
   })
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    const debugInfo = {
+      url: options.apiUrl,
+      requestBody,
+      status: res.status,
+      statusText: res.statusText,
+      responseText: text,
+    }
+    console.error('[ChatbotWidget] Debate API returned non-OK response', debugInfo)
     throw new Error(`Chat API failed: ${res.status} ${res.statusText} ${text}`)
   }
 
-  // Expecting: { reply: string }
-  const data = (await res.json()) as { reply?: string }
-  return data.reply ?? ''
+  if (!res.body) {
+    const debugInfo = {
+      url: options.apiUrl,
+      requestBody,
+      status: res.status,
+      statusText: res.statusText,
+      responseText: 'Response body is empty.',
+    }
+    console.error('[ChatbotWidget] Debate API response body missing', debugInfo)
+    throw new Error('Chat API did not return a response body.')
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let finalResult: DebateFinalResult | null = null
+
+  const processBlocks = (raw: string, flush: boolean) => {
+    const blocks = raw.split('\n\n')
+    const remainder = flush ? '' : (blocks.pop() ?? '')
+
+    for (const block of blocks) {
+      const streamEvent = parseSseBlock(block)
+      if (!streamEvent) continue
+
+      const status = streamStatusFromEvent(streamEvent)
+      if (status) {
+        options.onStatus?.(status)
+      }
+
+      if (streamEvent.event === 'error') {
+        const message = streamEvent.data.message
+        const debugInfo = {
+          url: options.apiUrl,
+          requestBody,
+          status: res.status,
+          statusText: res.statusText,
+          responseText: typeof message === 'string' ? message : 'Chat stream failed.',
+        }
+        console.error('[ChatbotWidget] Debate API stream error', debugInfo)
+        throw new Error(typeof message === 'string' ? message : 'Chat stream failed.')
+      }
+
+      if (streamEvent.event === 'final_result') {
+        const result = streamEvent.data.result
+        if (result && typeof result === 'object') {
+          finalResult = result as DebateFinalResult
+        }
+      }
+    }
+
+    return remainder
+  }
+
+  while (true) {
+    const { value, done } = await reader.read()
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done })
+    buffer = processBlocks(buffer, done)
+
+    if (done) break
+  }
+
+  return formatFinalReply(finalResult)
 }
 
 export function ChatbotWidget({
   context,
-  apiUrl = '/api/chat',
+  apiUrl,
   storageKey = DEFAULT_STORAGE_KEY,
   title = 'Dashboard Assistant',
-  subtitle = 'Ask a question about signals, competitors, or actions',
+  subtitle = 'Test an idea against the latest dashboard signals',
 }: ChatbotWidgetProps) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage])
@@ -117,7 +361,16 @@ export function ChatbotWidget({
   const listRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const placeholder = useMemo(() => 'Ask about signals, competitors, or dashboard actions...', [])
+  const resolvedApiUrl = useMemo(
+    () => normalizeApiUrl(apiUrl ?? process.env.NEXT_PUBLIC_CHAT_API_URL),
+    [apiUrl],
+  )
+  const apiKey = process.env.NEXT_PUBLIC_CHAT_API_KEY
+
+  const placeholder = useMemo(
+    () => 'Describe an idea to test with the latest dashboard signals...',
+    [],
+  )
 
   const toggleOpen = () => setOpen((current) => !current)
 
@@ -182,39 +435,52 @@ export function ChatbotWidget({
       createdAt: Date.now(),
     }
 
-    // Compute the conversation snapshot that will be sent to the API
+    const botMessageId = makeId('bot')
     const conversationSnapshot = [...messages, userMessage]
 
-    setMessages(conversationSnapshot)
+    setMessages([
+      ...conversationSnapshot,
+      {
+        id: botMessageId,
+        from: 'bot',
+        text: 'Reviewing your idea against the latest dashboard signals...',
+        createdAt: Date.now(),
+      },
+    ])
     setInput('')
     setSending(true)
 
     try {
-      let replyText = ''
+      const replyText = await postChat({
+        apiUrl: resolvedApiUrl,
+        message: trimmed,
+        context,
+        apiKey,
+        onStatus: (status) => {
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === botMessageId ? { ...message, text: status } : message,
+            ),
+          )
+        },
+      })
 
-      // If API exists later, this will work; for now it will likely 404 → fallback
-      try {
-        replyText = await postChat({
-          apiUrl,
-          message: trimmed,
-          context,
-          conversation: conversationSnapshot,
-        })
-      } catch {
-        // Fallback to local reply if API isn't ready yet
-        await new Promise((r) => setTimeout(r, 250))
-        replyText = generateBotReply(trimmed)
-      }
-
-      const botMessage: ChatMessage = {
-        id: makeId('bot'),
-        from: 'bot',
-        text: replyText || 'Sorry — I did not get a reply. Try again.',
-        createdAt: Date.now(),
-      }
-
-      setMessages((current) => [...current, botMessage])
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === botMessageId
+            ? {
+                ...message,
+                text: replyText || 'Sorry — I did not get a reply. Try again.',
+              }
+            : message,
+        ),
+      )
     } catch (e) {
+      setMessages((current) => current.filter((message) => message.id !== botMessageId))
+      console.error('[ChatbotWidget] Debate API call failed', {
+        url: resolvedApiUrl,
+        error: e,
+      })
       setError(e instanceof Error ? e.message : 'Unknown error')
     } finally {
       setSending(false)

@@ -119,7 +119,7 @@ def fetch_all_signals(conn):
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT signal_id, source_type, source_name, raw_text, created_at
+            SELECT signal_id, source_type, source_name, raw_text, url, created_at
             FROM market_signals
             WHERE raw_text IS NOT NULL AND btrim(raw_text) <> ''
             ORDER BY created_at DESC;
@@ -133,7 +133,8 @@ def fetch_all_signals(conn):
             "source_type": row[1],
             "source_name": row[2],
             "raw_text": row[3],
-            "created_at": row[4],
+            "url": row[4],
+            "created_at": row[5],
         }
         for row in rows
     ]
@@ -279,7 +280,7 @@ def build_clean_record(row: dict[str, Any], extracted: dict[str, Any]) -> dict[s
         "signal_id": source_id,
         "source": {
             "type": row.get("source_type"),
-            "url": extracted.get("url"),
+            "url": row.get("url") or extracted.get("url"),
             "date": normalized_date,
             "author": extracted.get("author"),
         },

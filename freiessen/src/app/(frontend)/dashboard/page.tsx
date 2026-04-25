@@ -3,6 +3,8 @@ import { getPayload } from 'payload'
 import { signId } from '@/lib/id-token'
 import DashboardClient from './DasboardClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const payload = await getPayload({ config })
 

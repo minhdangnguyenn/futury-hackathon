@@ -5,7 +5,7 @@ services:
     build: .
     container_name: viega-intelligence
     env_file:
-      - .env
+      - ../backend/.env
     ports:
       - "8000:8000"
     stdin_open: true # keeps stdin open for input()

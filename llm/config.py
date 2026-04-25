@@ -1,11 +1,17 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = os.path.dirname(__file__)
+load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
+load_dotenv(os.path.join(BASE_DIR, "..", "backend", ".env"), override=False)
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise ValueError("GOOGLE_API_KEY not set in .env file")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+
+
+def require_google_api_key() -> str:
+    if not GOOGLE_API_KEY:
+        raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY not set in environment.")
+    return GOOGLE_API_KEY
 
 MODEL_NAME = "gemini-3.1-pro-preview"
 MAX_DEBATE_ROUNDS = 2

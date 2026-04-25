@@ -30,7 +30,18 @@ class Display:
     def signal_card(self, signal: MarketSignal):
         print(f"\n{self.BOLD}  📌 {signal.title}{self.RESET}")
         print(f"  Type: {signal.signal_type.value}")
-        print(f"  Region: {signal.region}")
+        if signal.region:
+            print(f"  Region: {signal.region}")
+        if signal.source_type:
+            print(f"  Source Type: {signal.source_type}")
+        if signal.evidence_quality:
+            print(f"  Evidence Quality: {signal.evidence_quality}")
+        if signal.relevance_score is not None:
+            print(f"  Relevance Score: {signal.relevance_score:.2f}")
+        if signal.freshness_score is not None:
+            print(f"  Freshness Score: {signal.freshness_score:.2f}")
+        if signal.sentiment is not None:
+            print(f"  Sentiment: {signal.sentiment:.2f}")
         print(f"\n  {signal.description}")
     
     def recommendation_card(self, result: DebateResult):

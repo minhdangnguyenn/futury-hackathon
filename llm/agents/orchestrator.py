@@ -12,13 +12,20 @@ class DebateOrchestrator:
     def __init__(self):
         self.correlator = SignalCorrelator()
 
-    def stream_combined_debate(self, persona_keys: list[str], rounds: int):
-        portfolio = self._build_portfolio()
+    def stream_combined_debate(
+        self,
+        persona_keys: list[str],
+        rounds: int,
+        source_mode: str = "default",
+        signals: list[MarketSignal] | None = None,
+    ):
+        portfolio = self._build_portfolio(source_mode=source_mode, signals=signals)
 
         yield {
             "type": "session_started",
             "rounds": rounds,
             "personas": persona_keys,
+            "source_mode": source_mode,
             "signals": [self._serialize_signal(signal) for signal in portfolio.signals],
         }
 
@@ -68,9 +75,21 @@ class DebateOrchestrator:
             )
         return personas
 
-    def _build_portfolio(self) -> SignalPortfolio:
+    def _build_portfolio(
+        self,
+        source_mode: str = "default",
+        signals: list[MarketSignal] | None = None,
+    ) -> SignalPortfolio:
         portfolio = SignalPortfolio()
-        for signal in ALL_SIGNALS:
+
+        if signals is not None:
+            source_signals = signals
+        else:
+            source_signals = ALL_SIGNALS
+            if source_mode == "dashboard_data":
+                source_signals = []
+
+        for signal in source_signals:
             portfolio.add_signal(signal)
         return portfolio
 
@@ -84,13 +103,7 @@ class DebateOrchestrator:
         )
 
     def _serialize_signal(self, signal: MarketSignal) -> dict:
-        return {
-            "title": signal.title,
-            "description": signal.description.strip(),
-            "signal_type": signal.signal_type.value,
-            "source": signal.source,
-            "region": signal.region,
-        }
+        return signal.to_dict()
 
     def _serialize_portfolio(self, portfolio: SignalPortfolio) -> dict:
         return {

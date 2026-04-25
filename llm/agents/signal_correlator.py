@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from config import GOOGLE_API_KEY, MODEL_NAME
+from config import MODEL_NAME, require_google_api_key
 from models.signal import MarketSignal
 from models.portfolio import SignalPortfolio, SignalCorrelation
 
@@ -23,12 +23,9 @@ Markets: Heating/Cooling, Drinking Water, Industrial, Shipbuilding.
 Customers: Installers, Planners, Wholesalers, End Users.
 """
 
-
-genai.configure(api_key=GOOGLE_API_KEY)
-
-
 class SignalCorrelator:
     def __init__(self):
+        genai.configure(api_key=require_google_api_key())
         self.model = genai.GenerativeModel(
             model_name=MODEL_NAME,
             system_instruction=CORRELATOR_PROMPT,
